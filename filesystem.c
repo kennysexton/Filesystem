@@ -20,6 +20,8 @@ char welcome();
 struct file{
 	int file_id;
 	char fname[50];
+	char dcreated[50];
+	char dmodified[50];
 };
 
 
@@ -32,8 +34,6 @@ int main(){
 	// createRoot(fp)
 	
 	welcome();
-
-	
 
 	fputs("a", fp);
 
