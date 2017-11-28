@@ -4,19 +4,14 @@
 // FileSystem
 
 #include <stdio.h>
-#include <stdlib.h>
-
-
-	/* Colors */
-#define CYAN_BOLD  "\033[1m\033[36m" 
-#define COLOR_RESET  "\033[0m"
-
+#include <stdlib.h> // for use of filesystem commands
 
 #define DRIVE "Drive2MB"
 
-	/* Functions */
-char welcome();
 
+	/* Functions */
+
+	/* Structs */
 struct file{
 	int file_id;
 	char fname[50];
@@ -24,30 +19,28 @@ struct file{
 	char dmodified[50];
 };
 
+// void initiateFileSystem(){
+// 	printf("setting up file system ...\n");
+// 	setup();
+// }
 
-int main(){
 
+
+void setup(){ // Sets up the file system
 
 	FILE *fp;
-	fp = fopen(DRIVE, "r+");  // open drive that will act as filesystem
 
+	fp = fopen(DRIVE, "r+");  // open drive that will act as filesystem
+	//fwrite(fp, 512, )
 	// createRoot(fp)
 	
-	welcome();
+	//fputs("a", fp);
+	printf("hurray!\n");
 
-	fputs("a", fp);
-
-
-
-
-	fclose(fp); // close filesystem
+	//return *fp;
 }
 
 
-char welcome(){
-
-	system("clear");  // clear the screen
-	printf(CYAN_BOLD "\tWelcome to Kenny's filesystem \n" COLOR_RESET); // welcome message
-
-	return 'a';
-}
+// int closefs(FILE *fp){
+// 	fclose(fp);
+// }
