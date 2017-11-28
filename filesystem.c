@@ -26,7 +26,7 @@ struct file{
 
 
 
-void setup(){ // Sets up the file system
+FILE setup(){ // Sets up the file system
 
 	FILE *fp;
 
@@ -35,12 +35,12 @@ void setup(){ // Sets up the file system
 	// createRoot(fp)
 	
 	//fputs("a", fp);
-	printf("hurray!\n");
+	// printf("hurray!\n");
 
-	//return *fp;
+	return *fp;
 }
 
 
-// int closefs(FILE *fp){
-// 	fclose(fp);
-// }
+int closefs(FILE *fp){
+	fclose(fp);
+}
