@@ -46,6 +46,8 @@ void displayOptions(){
 	printf("\"create\"\t\"delete\" \n");
 	printf("\"open\"  \t\"close\" \n");
 	printf("\"read\"  \t\"write\" \n");
+	printf("\"up\"    \t\"down\" \n");
+	printf("\"info\"  \t\"path\" \n");
 }
 
 void commandChoice(char str[]){
