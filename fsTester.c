@@ -25,14 +25,16 @@ int main(){
 	FILE *fp;
 	char str[20];
 	
-	setup();
+	setup(); // start up the filesystem
 	welcome();
-	displayOptions();
-	printf("type a command: ");
-	scanf("%20s", str);
+	
+	while (1){
+		displayOptions();
+		printf("type a command: ");
+		scanf("%20s", str);
 
-	commandChoice(str);
-
+		commandChoice(str);
+	}
 	//closefs(fp);
 }
 
@@ -44,19 +46,36 @@ void welcome(){
 void displayOptions(){
 	printf(YELLOW_BOLD "Here are your options:\n" COLOR_RESET);
 	printf("\"create\"\t\"delete\" \n");
-	printf("\"open\"  \t\"close\" \n");
 	printf("\"read\"  \t\"write\" \n");
 	printf("\"up\"    \t\"down\" \n");
 	printf("\"info\"  \t\"path\" \n");
+	printf("\"list\"  \t\"\" \n");
 }
 
 void commandChoice(char str[]){
 
-	if (strcmp(str, "create") == 0){
+	char fileName[9];
+
+	if (strcmp(str, "create") == 0){ // needs extension handling
 		printf("create selected\n");
+		printf("Enter the name of file: ");
+		scanf("%8s", fileName);
+
+		fs_create(fileName);
+
+		//printf("%s created\n", fileName);
+
+		//divide filename and .txt if applicable
+		//fs_create(char *filename, char *extension)
 	}
 	else if (strcmp(str, "delete") == 0){
 		printf("delete selected\n");
+	}
+	else if (strcmp(str, "read") == 0){
+		fs_read(fileName);
+	}
+	else if (strcmp(str, "write") == 0){
+		
 	}
 	
 }

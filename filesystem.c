@@ -7,6 +7,11 @@
 #include <stdlib.h> // for use of filesystem commands
 
 #define DRIVE "Drive2MB"
+#define BLOCK_SIZE 512   //bytes
+
+
+	/* Globals */
+FILE *fp;
 
 
 	/* Functions */
@@ -19,26 +24,42 @@ struct file{
 	char dmodified[50];
 };
 
-// void initiateFileSystem(){
-// 	printf("setting up file system ...\n");
-// 	setup();
-// }
-
-
 
 FILE setup(){ // Sets up the file system
 
-	FILE *fp;
+	
 
 	fp = fopen(DRIVE, "r+");  // open drive that will act as filesystem
 	//fwrite(fp, 512, )
 	// createRoot(fp)
 	
 	//fputs("a", fp);
-	// printf("hurray!\n");
+	printf("hurray!\n");
 
 	return *fp;
 }
+
+void fs_create(char *fileName){
+	printf("%s", fileName);
+
+	fputs(fileName, fp);
+
+}
+
+
+void fs_read(char *fileName){
+	char buffer[8];
+
+	fseek(fp, 0, SEEK_SET);	
+	fread(buffer, 1, 8, fp);
+
+	for (int i = 0; i < sizeof(buffer); ++i)
+	{
+		printf("%c", buffer[i]);
+	}
+	puts("");
+}
+
 
 
 int closefs(FILE *fp){
