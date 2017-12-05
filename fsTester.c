@@ -10,7 +10,9 @@
 
 	/* Colors */
 #define CYAN_BOLD  "\033[1m\033[36m"
-#define YELLOW_BOLD   "\033[1m\033[33m" 
+#define YELLOW_BOLD   "\033[1m\033[33m"
+#define BRIGHT_RED "\033[1m\033[31m"
+
 #define COLOR_RESET  "\033[0m"
 
 	/* Functions */
@@ -30,12 +32,11 @@ int main(){
 	
 	while (1){
 		displayOptions();
-		printf("type a command: ");
+		printf("$ ");
 		scanf("%20s", str);
 
 		commandChoice(str);
 	}
-	//closefs(fp);
 }
 
 void welcome(){
@@ -76,6 +77,15 @@ void commandChoice(char str[]){
 	}
 	else if (strcmp(str, "write") == 0){
 		
+	}
+	else if (strcmp(str, "exit") == 0){ // exit program
+		exit(0);	
+	}
+	else if (strcmp(str, "quit") == 0){ // exit program
+		exit(0);	
+	}
+	else {
+		printf(BRIGHT_RED "Invalid Command\n" COLOR_RESET);
 	}
 	
 }
