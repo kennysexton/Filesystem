@@ -18,10 +18,10 @@
 	/* Globals */
 FILE *fp; // same file pointer used by all functions
 
-
 	/* Functions */
 void createRoot();
 short getcurrentTime();
+short getcurrentDate();
 
 
 	/* Structs */
@@ -61,7 +61,7 @@ void createRoot() {
 
 	strcpy(root.fileName, "/");
 	strcpy(root.ext, "DIR");
-	//root.create_date
+	//strcpy(root.create_time, getcurrentTime());
 	getcurrentTime();
 	
 	//printf("hello");
@@ -72,22 +72,73 @@ void createRoot() {
 }
 
 short getcurrentTime(){  // retrieves current time EST (UTC -5)
-	
-	/* github_user: paxdiablo
-     * url: stackoverflow.com/questions/2242963/get-the-current-time-in-seconds
+	/*	Getting formatted date 
+		github_user: paxdiablo
+     	url: stackoverflow.com/questions/2242963/get-the-current-time-in-seconds
 	*/
+	short hour;
+	short min;
+	short sec;
+	short ftime; // time in proper format for storage
+
 	time_t now;
 	struct tm *tm;
 
 	now = time(0);
 
 	if((tm = localtime(&now)) != NULL){
+		// sprintf (tm_String, "%02d %02d %02d\n", 
+		// 	tm->tm_hour, tm->tm_min, tm->tm_sec);
+		hour = tm->tm_hour;
+		min = tm->tm_mon;
+		sec = tm->tm_sec;
+	}
+	printf("0x%x\n", hour);
+	printf("0x%x\n", min);
+	printf("0x%x\n", sec);
+	ftime = hour * 10000 + min * 100 + sec;
+	printf("%x\n", ftime);
+	
+	return ftime;
+}
+
+short getcurrentDate(){
+	/*	Getting formatted date using time functions 
+		github_user: paxdiablo
+     	url: stackoverflow.com/questions/2242963/get-the-current-time-in-seconds
+	*/
+	short year;
+	short month;
+	short day;
+
+	time_t now;
+	struct tm *tm;
+
+	now = time(0);
+
+	if((tm = localtime(&now)) != NULL){
+		// sprintf (tm_String, "%02d %02d %02d\n", 
+		// 	tm->tm_hour, tm->tm_min, tm->tm_sec);
+		year = tm->tm_year;
+		month = tm->tm_month;
+		day = tm->tm_day;
+	}
+	printf("0x%x\n", year);
+	printf("0x%x\n", month);
+	printf("0x%x\n", day);
+	//ftime = hour * 10000 + min * 100 + sec;
+	printf("%x\n", fdate);
+	
+	return fdate;
+}
+
+/* 
+	if((tm = localtime(&now)) != NULL){
 		printf ("%04d %02d %02d %02d %02d %02d\n", 
 			tm->tm_year+1900, tm->tm_mon+1, tm->tm_mday,
 			tm->tm_hour, tm->tm_min, tm->tm_sec);
 	}
-	return 0;
-}
+*/
 
 /*------------------------------ Called by user ------------------------------*/
 void fs_create(char *fileName){
