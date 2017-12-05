@@ -40,7 +40,7 @@ int main(){
 }
 
 void welcome(){
-	system("clear");  // clear the screen
+	// system("clear");  // clear the screen
 	printf(CYAN_BOLD "\tWelcome to Kenny's filesystem \n\n" COLOR_RESET); // welcome message
 }
 
@@ -50,7 +50,7 @@ void displayOptions(){
 	printf("\"read\"  \t\"write\" \n");
 	printf("\"up\"    \t\"down\" \n");
 	printf("\"info\"  \t\"path\" \n");
-	printf("\"list\"  \t\"\" \n");
+	printf("\"list\"  \t\"exit\" \n");
 }
 
 void commandChoice(char str[]){
@@ -78,11 +78,14 @@ void commandChoice(char str[]){
 	else if (strcmp(str, "write") == 0){
 		
 	}
+	else if (strcmp(str, "clear") == 0){ // clears screen
+		system("clear");	
+	}
 	else if (strcmp(str, "exit") == 0){ // exit program
-		exit(0);	
+		fs_exit();	
 	}
 	else if (strcmp(str, "quit") == 0){ // exit program
-		exit(0);	
+		fs_exit();	
 	}
 	else {
 		printf(BRIGHT_RED "Invalid Command\n" COLOR_RESET);
