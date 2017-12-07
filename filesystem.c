@@ -22,19 +22,20 @@ FILE *fp; // same file pointer used by all functions
 char digit2[3];
 char digit4[5];
 char digit6[7]; // Used for internal ptrs
-// char *blank32[32];
+char *blank32[32] = { NULL };
+char *blank64[64] = { NULL };
 
 	/* Functions */
 void createRoot();
 char *getcurrentTime(int i);
 char *getcurrentDate(int i);
-//void clear32bytes();
-//void clear64bytes();
+void clear32bytes();
+void clear64bytes();
 void printTime();
 
 
 	/* Structs */
-struct FAT {	// fat entries are 32 byte (16 fat entries per block)
+struct FAT{		// fat entries are 32 byte (16 fat entries per block)
 	unsigned char valid[1];		// 1 byte
 	unsigned char fileName[12]; // 12 bytes
 	unsigned char rootPtr[6];	// 6 bytes
@@ -51,14 +52,12 @@ struct rootDir{		// Each file has a 64 byte root directory  (8 files can be stor
 	unsigned char create_hour[2]; 	// 2 bytes
 	unsigned char create_min[2]; 	// 2 bytes
 	unsigned char create_sec[2]; 	// 2 bytes
-
 	unsigned char modify_year[4];	// 4 bytes
 	unsigned char modify_month[2]; 	// 2 bytes
 	unsigned char modify_day[2]; 	// 2 bytes
 	unsigned char modify_hour[2]; 	// 2 bytes
 	unsigned char modify_min[2]; 	// 2 bytes
 	unsigned char modify_sec[2]; 	// 2 bytes
-
 	unsigned char starting_block[2]; 	// 2 bytes
 	unsigned char file_size[4];		// 4 bytes
 };
@@ -69,9 +68,6 @@ FILE setup(){ // Sets up the file system
 	//fwrite(fp, 512, )
 	createRoot();
 
-	// for (int i = 0; i < 32; i++){
-	// 	blank32[i] = NULL;
-	// }
 	
 	//fputs("a", fp);
 	return *fp;
@@ -80,6 +76,33 @@ FILE setup(){ // Sets up the file system
 void createRoot() {
 	int i = 0;
 
+		/* --------------------- Init FAT --------------------- */
+	clear32bytes();
+	fseek(fp, 0, SEEK_SET);		// START OF FAT
+
+	if (i == 0){  // prints debug information
+		printf("SYSTEM| FAT created\n");
+	}
+	struct FAT FATroot;
+
+	//strcpy(FATroot.valid, "1");
+	//strcpy(FATroot.fileName, "/");
+
+	sprintf(digit6, "%u", BLOCK_SIZE * START_OF_ROOT / 16 + 1); 	// 512 * START_OF_ROOT gives the bit starting number dividing by /16 + 1 gives line number
+	printf("%s\n", digit6);
+	//strcpy(FATroot.rootPtr,digit6);
+
+	sprintf(digit6, "%u", BLOCK_SIZE * START_OF_DATA / 16 + 1);	// returns the index of data as a string
+	printf("%s\n", digit6);
+	//strcpy(FATroot.dataPtr, digit6);
+
+	sprintf(digit6, "%u", 3);	// returns the index of data as a string
+	printf("%s\n", digit6);
+	//strcpy(FATroot.nextPtr, digit6);
+
+	fwrite(&FATroot, sizeof(struct FAT), 1, fp);
+	printf("SYSTEM| FAT populated\n");	
+
 	/* --------------------- Init rootDir --------------------- */  
 	i = fseek(fp, BLOCK_SIZE * START_OF_ROOT, SEEK_SET); // START OF ROOT
 	//fputs("11111111", fp);
@@ -87,7 +110,6 @@ void createRoot() {
 	if (i == 0){  // prints debug information
 		printf("SYSTEM| blank root created\n");
 	}
-
 	struct rootDir root; // declare root Directory
 
 	strcpy(root.fileName, "/");
@@ -114,38 +136,9 @@ void createRoot() {
 
 	fwrite(&root, sizeof(struct rootDir), 1, fp);
 	printf("SYSTEM| root populated\n");
-
-	/* --------------------- Init FAT --------------------- */
-	i = fseek(fp, 0, SEEK_SET); // START OF ROOT
-	
-	if (i == 0){  // prints debug information
-		printf("SYSTEM| FAT created\n");
-	}
-	struct FAT FATroot;
-
-	strcpy(FATroot.valid, "1");
-	strcpy(FATroot.fileName, "/");
-
-	sprintf(digit6, "%u", BLOCK_SIZE * START_OF_ROOT / 16 + 1); 	// 512 * START_OF_ROOT gives the bit starting number dividing by /16 + 1 gives line number
-	printf("%s\n", digit6);
-	strcpy(FATroot.rootPtr,digit6);
-
-	sprintf(digit6, "%u", BLOCK_SIZE * START_OF_DATA / 16 + 1);	// returns the index of data as a string
-	printf("%s\n", digit6);
-	strcpy(FATroot.dataPtr, digit6);
-
-	sprintf(digit6, "%u", 3);	// returns the index of data as a string
-	printf("%s\n", digit6);
-	strcpy(FATroot.nextPtr, digit6);
-
-
-	fwrite(&FATroot, sizeof(struct FAT), 1, fp);
-	printf("SYSTEM| FAT populated\n");	
-
-
-
-
 }
+
+
 
 char *getcurrentDate(int i){ // retrieves curretn date EST (UTC - 5)
 	time_t now;
@@ -177,7 +170,6 @@ char *getcurrentTime(int i){  // retrieves current time EST (UTC -5)
 	
 	time_t now;
 	struct tm *tm;
-
 	now = time(0);
 
 	if((tm = localtime(&now)) != NULL){
@@ -218,10 +210,15 @@ void printTime(){ // prints current time formatted   || FOR DEBUGGING
 	}
 }
 
-// void clear32bytes(){  //  resets a row of 32 bytes 
-// 	fwrite(blank32, 1, sizeof(blank32), fp);
-// 	//TODO: may add a fp reset
-// }
+void clear32bytes(){  //  resets a row of 32 bytes 
+	fwrite(blank32, 1, sizeof(blank32), fp);
+	//TODO: may add a fp reset
+}
+
+void clear64bytes(){  //  resets a row of 64 bytes 
+	fwrite(blank64, 1, sizeof(blank64), fp);
+	//TODO: may add a fp reset
+}
 
 /*------------------------------ Called by user ------------------------------*/
 void fs_create(char *fileName){
@@ -233,10 +230,10 @@ void fs_create(char *fileName){
 }
 
 void fs_read(char *fileName){
-	char buffer[8];
+	char buffer[12];
 
 	fseek(fp, 0, SEEK_SET);	
-	fread(buffer, 1, 8, fp);
+	fread(buffer, 1, 12, fp);
 
 	for (int i = 0; i < sizeof(buffer); ++i)
 	{
