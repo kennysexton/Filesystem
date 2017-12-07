@@ -10,25 +10,39 @@
 
 #define DRIVE "Drive2MB"
 #define BLOCK_SIZE 512  //bytes
+#define BLOCK_SIZE_LINES
 #define FILE_MAX 64   	// files can take up a max of 64 blocks  == 32768 MAX BYTES / 512 BLOCK_SIZE
 #define START_OF_FAT 0  // same as SEEK_SET
-#define START_OF_ROOT 1 // How many blocks in the root starts 
+#define START_OF_ROOT 1 // # of blocks until start of root
+#define START_OF_DATA 2	// # of block until start of data 
 
 
 	/* Globals */
 FILE *fp; // same file pointer used by all functions
 char digit2[3];
 char digit4[5];
+char digit6[7]; // Used for internal ptrs
+// char *blank32[32];
 
 	/* Functions */
 void createRoot();
 char *getcurrentTime(int i);
 char *getcurrentDate(int i);
+//void clear32bytes();
+//void clear64bytes();
 void printTime();
 
 
 	/* Structs */
-struct rootDir{		// Each file has a 32 byte root directory  (16 files can be stored in 1 block)
+struct FAT {	// fat entries are 32 byte (16 fat entries per block)
+	unsigned char valid[1];		// 1 byte
+	unsigned char fileName[12]; // 12 bytes
+	unsigned char rootPtr[6];	// 6 bytes
+	unsigned char dataPtr[6]; 	// 6 bytes
+	unsigned char nextPtr[6];	// 6 bytes
+};
+
+struct rootDir{		// Each file has a 64 byte root directory  (8 files can be stored in 1 block)
 	unsigned char fileName[12];  	// 12 bytes
 	unsigned char ext[3]; 			// 3 bytes
 	unsigned char create_year[4];	// 4 bytes
@@ -47,7 +61,6 @@ struct rootDir{		// Each file has a 32 byte root directory  (16 files can be sto
 
 	unsigned char starting_block[2]; 	// 2 bytes
 	unsigned char file_size[4];		// 4 bytes
-	
 };
 
 /*------------------------------ File Setup ------------------------------*/
@@ -55,6 +68,10 @@ FILE setup(){ // Sets up the file system
 	fp = fopen(DRIVE, "r+");  // open drive that will act as filesystem
 	//fwrite(fp, 512, )
 	createRoot();
+
+	// for (int i = 0; i < 32; i++){
+	// 	blank32[i] = NULL;
+	// }
 	
 	//fputs("a", fp);
 	return *fp;
@@ -63,6 +80,7 @@ FILE setup(){ // Sets up the file system
 void createRoot() {
 	int i = 0;
 
+	/* --------------------- Init rootDir --------------------- */  
 	i = fseek(fp, BLOCK_SIZE * START_OF_ROOT, SEEK_SET); // START OF ROOT
 	//fputs("11111111", fp);
 
@@ -94,17 +112,38 @@ void createRoot() {
 	strcpy(root.starting_block, "00");
 	strcpy(root.file_size, "0000");
 
-	i = fwrite(&root, sizeof(struct rootDir), 1, fp);
+	fwrite(&root, sizeof(struct rootDir), 1, fp);
+	printf("SYSTEM| root populated\n");
+
+	/* --------------------- Init FAT --------------------- */
+	i = fseek(fp, 0, SEEK_SET); // START OF ROOT
+	
 	if (i == 0){  // prints debug information
-		printf("SYSTEM| root populated\n");
+		printf("SYSTEM| FAT created\n");
 	}
+	struct FAT FATroot;
 
-	//printTime();
-	
-	//printf("hello");
+	strcpy(FATroot.valid, "1");
+	strcpy(FATroot.fileName, "/");
 
-	//root.create_time = 
-	
+	sprintf(digit6, "%u", BLOCK_SIZE * START_OF_ROOT / 16 + 1); 	// 512 * START_OF_ROOT gives the bit starting number dividing by /16 + 1 gives line number
+	printf("%s\n", digit6);
+	strcpy(FATroot.rootPtr,digit6);
+
+	sprintf(digit6, "%u", BLOCK_SIZE * START_OF_DATA / 16 + 1);	// returns the index of data as a string
+	printf("%s\n", digit6);
+	strcpy(FATroot.dataPtr, digit6);
+
+	sprintf(digit6, "%u", 3);	// returns the index of data as a string
+	printf("%s\n", digit6);
+	strcpy(FATroot.nextPtr, digit6);
+
+
+	fwrite(&FATroot, sizeof(struct FAT), 1, fp);
+	printf("SYSTEM| FAT populated\n");	
+
+
+
 
 }
 
@@ -179,6 +218,11 @@ void printTime(){ // prints current time formatted   || FOR DEBUGGING
 	}
 }
 
+// void clear32bytes(){  //  resets a row of 32 bytes 
+// 	fwrite(blank32, 1, sizeof(blank32), fp);
+// 	//TODO: may add a fp reset
+// }
+
 /*------------------------------ Called by user ------------------------------*/
 void fs_create(char *fileName){
 	printf("%s", fileName);
@@ -229,7 +273,6 @@ void fs_info(char *fileName){
 	printf("Ext: %3s\n", fext);
 	printf("Created: %s-%s-%s at %s:%s:%s \n", cmon, cday, cyear, chour, cmin, csec);
 	printf("Modified: %s-%s-%s at %s:%s:%s \n", cmon, cday, cyear, chour, cmin, csec);
-
 
 }
 
