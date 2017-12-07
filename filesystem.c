@@ -17,24 +17,37 @@
 
 	/* Globals */
 FILE *fp; // same file pointer used by all functions
+char digit2[3];
+char digit4[5];
 
 	/* Functions */
 void createRoot();
-short getcurrentTime();
-short getcurrentDate();
+char *getcurrentTime(int i);
+char *getcurrentDate(int i);
+void printTime();
 
 
 	/* Structs */
 struct rootDir{		// Each file has a 32 byte root directory  (16 files can be stored in 1 block)
-	unsigned char fileName[8];  // 8 bytes
-	unsigned char ext[3]; 		// 3 bytes
-	unsigned short create_time;	// 2 bytes
-	unsigned short create_date; // 2 bytes
-	unsigned short modify_time; // 2 bytes
-	unsigned short modify_date; // 2 bytes
-	unsigned short starting_block; // 2 bytes
-	unsigned long file_size;	// 4 bytes
-	unsigned long empty;		// 6 bytes
+	unsigned char fileName[12];  	// 12 bytes
+	unsigned char ext[3]; 			// 3 bytes
+	unsigned char create_year[4];	// 4 bytes
+	unsigned char create_month[2]; 	// 2 bytes
+	unsigned char create_day[2]; 	// 2 bytes
+	unsigned char create_hour[2]; 	// 2 bytes
+	unsigned char create_min[2]; 	// 2 bytes
+	unsigned char create_sec[2]; 	// 2 bytes
+
+	unsigned char modify_year[4];	// 4 bytes
+	unsigned char modify_month[2]; 	// 2 bytes
+	unsigned char modify_day[2]; 	// 2 bytes
+	unsigned char modify_hour[2]; 	// 2 bytes
+	unsigned char modify_min[2]; 	// 2 bytes
+	unsigned char modify_sec[2]; 	// 2 bytes
+
+	unsigned char starting_block[2]; 	// 2 bytes
+	unsigned char file_size[4];		// 4 bytes
+	
 };
 
 /*------------------------------ File Setup ------------------------------*/
@@ -51,18 +64,42 @@ void createRoot() {
 	int i = 0;
 
 	i = fseek(fp, BLOCK_SIZE * START_OF_ROOT, SEEK_SET); // START OF ROOT
-	fputs("11111111", fp);
+	//fputs("11111111", fp);
 
 	if (i == 0){  // prints debug information
-		printf("SYSTEM| root created\n");
+		printf("SYSTEM| blank root created\n");
 	}
 
 	struct rootDir root; // declare root Directory
 
 	strcpy(root.fileName, "/");
 	strcpy(root.ext, "DIR");
-	//strcpy(root.create_time, getcurrentTime());
-	getcurrentTime();
+
+	strcpy(root.create_year, getcurrentDate(1));
+	strcpy(root.create_month, getcurrentDate(2));
+	strcpy(root.create_day, getcurrentDate(3));	
+
+	strcpy(root.create_hour, getcurrentTime(1));
+	strcpy(root.create_min, getcurrentTime(2));
+	strcpy(root.create_sec, getcurrentTime(3));
+
+	strcpy(root.modify_year, getcurrentDate(1));
+	strcpy(root.modify_month, getcurrentDate(2));
+	strcpy(root.modify_day, getcurrentDate(3));	
+
+	strcpy(root.modify_hour, getcurrentTime(1));
+	strcpy(root.modify_min, getcurrentTime(2));
+	strcpy(root.modify_sec, getcurrentTime(3));
+
+	strcpy(root.starting_block, "00");
+	strcpy(root.file_size, "0000");
+
+	i = fwrite(&root, sizeof(struct rootDir), 1, fp);
+	if (i == 0){  // prints debug information
+		printf("SYSTEM| root populated\n");
+	}
+
+	//printTime();
 	
 	//printf("hello");
 
@@ -71,74 +108,76 @@ void createRoot() {
 
 }
 
-short getcurrentTime(){  // retrieves current time EST (UTC -5)
+char *getcurrentDate(int i){ // retrieves curretn date EST (UTC - 5)
+	time_t now;
+	struct tm *tm;
+
+	now = time(0);
+
+	if((tm = localtime(&now)) != NULL){
+		if (i == 1){	// 1 === YEAR
+			sprintf(digit4, "%04d", tm->tm_year + 1900);
+			return digit4;
+		}
+		else if (i == 2){ // 2 == MONTH
+			sprintf(digit2, "%02d", tm->tm_mon + 1);
+			return digit2;
+		}
+		else if (i == 3){	// 3 == DAY
+			sprintf(digit2, "%02d", tm->tm_mday);
+			return digit2;
+		}
+		else {
+			printf("invalid call to getcurrentDate(int i)\n");
+		}
+	}
+
+}
+
+char *getcurrentTime(int i){  // retrieves current time EST (UTC -5)
+	
+	time_t now;
+	struct tm *tm;
+
+	now = time(0);
+
+	if((tm = localtime(&now)) != NULL){
+		// sprintf (tm_String, "%02d %02d %02d\n", 
+		// 	tm->tm_hour, tm->tm_min, tm->tm_sec);
+		if (i == 1){	// 1 == HOUR
+			sprintf(digit2, "%02d", tm->tm_hour);
+			return digit2;
+		}
+		else if (i == 2){	// 2 == MIN
+			sprintf(digit2, "%02d", tm->tm_min);
+			return digit2;
+		}
+		else if (i == 3){	// 3 == SEC
+			sprintf(digit2, "%02d", tm->tm_sec);
+			return digit2;
+		}
+		else {
+			printf("invalid call to getcurrentTime(int i)\n");
+		}
+	}
+}
+
+void printTime(){ // prints current time formatted   || FOR DEBUGGING
 	/*	Getting formatted date 
 		github_user: paxdiablo
      	url: stackoverflow.com/questions/2242963/get-the-current-time-in-seconds
 	*/
-	short hour;
-	short min;
-	short sec;
-	short ftime; // time in proper format for storage
-
 	time_t now;
 	struct tm *tm;
 
 	now = time(0);
 
-	if((tm = localtime(&now)) != NULL){
-		// sprintf (tm_String, "%02d %02d %02d\n", 
-		// 	tm->tm_hour, tm->tm_min, tm->tm_sec);
-		hour = tm->tm_hour;
-		min = tm->tm_mon;
-		sec = tm->tm_sec;
-	}
-	printf("0x%x\n", hour);
-	printf("0x%x\n", min);
-	printf("0x%x\n", sec);
-	ftime = hour * 10000 + min * 100 + sec;
-	printf("%x\n", ftime);
-	
-	return ftime;
-}
-
-short getcurrentDate(){
-	/*	Getting formatted date using time functions 
-		github_user: paxdiablo
-     	url: stackoverflow.com/questions/2242963/get-the-current-time-in-seconds
-	*/
-	short year;
-	short month;
-	short day;
-
-	time_t now;
-	struct tm *tm;
-
-	now = time(0);
-
-	if((tm = localtime(&now)) != NULL){
-		// sprintf (tm_String, "%02d %02d %02d\n", 
-		// 	tm->tm_hour, tm->tm_min, tm->tm_sec);
-		year = tm->tm_year;
-		month = tm->tm_month;
-		day = tm->tm_day;
-	}
-	printf("0x%x\n", year);
-	printf("0x%x\n", month);
-	printf("0x%x\n", day);
-	//ftime = hour * 10000 + min * 100 + sec;
-	printf("%x\n", fdate);
-	
-	return fdate;
-}
-
-/* 
 	if((tm = localtime(&now)) != NULL){
 		printf ("%04d %02d %02d %02d %02d %02d\n", 
 			tm->tm_year+1900, tm->tm_mon+1, tm->tm_mday,
 			tm->tm_hour, tm->tm_min, tm->tm_sec);
 	}
-*/
+}
 
 /*------------------------------ Called by user ------------------------------*/
 void fs_create(char *fileName){
@@ -160,6 +199,38 @@ void fs_read(char *fileName){
 		printf("%c", buffer[i]);
 	}
 	puts("");
+}
+
+void fs_info(char *fileName){
+
+	char fName[13] = {'\0'};
+	char fext[4] = {'\0'};
+	char cyear[5] = {'\0'};
+	char cmon[3] = {'\0'};
+	char cday[3]= {'\0'};
+	char chour[3]= {'\0'};
+	char cmin[3]= {'\0'};
+	char csec[3]= {'\0'};
+
+	fseek(fp, BLOCK_SIZE * START_OF_ROOT, SEEK_SET);  // navigate to root
+
+	// if (filefound)
+	
+	fread(fName, 1, 12, fp);
+	fread(fext, 1, 3, fp);
+	fread(cyear, 1, 4, fp);
+	fread(cmon, 1, 2, fp);
+	fread(cday, 1, 2, fp);
+	fread(chour, 1, 2, fp);
+	fread(cmin, 1, 2, fp);
+	fread(csec, 1, 2, fp);
+
+	printf("Name: %s\n", fName);
+	printf("Ext: %3s\n", fext);
+	printf("Created: %s-%s-%s at %s:%s:%s \n", cmon, cday, cyear, chour, cmin, csec);
+	printf("Modified: %s-%s-%s at %s:%s:%s \n", cmon, cday, cyear, chour, cmin, csec);
+
+
 }
 
 void fs_exit(){ // closes the disk,  and exits

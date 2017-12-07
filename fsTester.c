@@ -78,6 +78,15 @@ void commandChoice(char str[]){
 	else if (strcmp(str, "write") == 0){
 		
 	}
+	// up
+
+	else if (strcmp(str, "info") == 0){  // get file metadata
+		printf("Enter the name of file: ");
+		scanf("%12s", fileName);
+
+		fs_info(fileName);
+	}
+
 	else if (strcmp(str, "clear") == 0){ // clears screen
 		system("clear");	
 	}
