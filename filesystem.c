@@ -21,21 +21,13 @@
 FILE *fp; // same file pointer used by all functions
 char digit2[3];
 char digit4[5];
-char digit6[7]; // Used for internal ptrs
+char digit6[6]; // Used for internal ptrs
 char *blank32[32] = { NULL };
 char *blank64[64] = { NULL };
 
-	/* Functions */
-void createRoot();
-char *getcurrentTime(int i);
-char *getcurrentDate(int i);
-void clear32bytes();
-void clear64bytes();
-void printTime();
-
 
 	/* Structs */
-struct FAT{		// fat entries are 32 byte (16 fat entries per block)
+struct fat{		// fat entries are 32 byte (16 fat entries per block)
 	unsigned char valid[1];		// 1 byte
 	unsigned char fileName[12]; // 12 bytes
 	unsigned char rootPtr[6];	// 6 bytes
@@ -62,13 +54,21 @@ struct rootDir{		// Each file has a 64 byte root directory  (8 files can be stor
 	unsigned char file_size[4];		// 4 bytes
 };
 
+	/* Functions */
+void createRoot();
+char *getcurrentTime(int i);
+char *getcurrentDate(int i);
+void clear32bytes();
+void clear64bytes();
+void printTime();
+void printfat( struct fat fatentry);
+
 /*------------------------------ File Setup ------------------------------*/
 FILE setup(){ // Sets up the file system
 	fp = fopen(DRIVE, "r+");  // open drive that will act as filesystem
 	//fwrite(fp, 512, )
 	createRoot();
 
-	
 	//fputs("a", fp);
 	return *fp;
 }
@@ -83,24 +83,34 @@ void createRoot() {
 	if (i == 0){  // prints debug information
 		printf("SYSTEM| FAT created\n");
 	}
-	struct FAT FATroot;
+	struct fat FATroot = {""}; // declare as empty
 
-	//strcpy(FATroot.valid, "1");
-	//strcpy(FATroot.fileName, "/");
+	//fwrite(&FATroot, sizeof(struct FAT), 1, fp);
+	//strcpy(FATroot.valid, NULL);
+	strcpy(FATroot.valid, "1");
+	strcpy(FATroot.fileName, "/");
+	//printf("%s\n", FATroot.rootPtr);
+
 
 	sprintf(digit6, "%u", BLOCK_SIZE * START_OF_ROOT / 16 + 1); 	// 512 * START_OF_ROOT gives the bit starting number dividing by /16 + 1 gives line number
 	printf("%s\n", digit6);
-	//strcpy(FATroot.rootPtr,digit6);
+	strcpy(FATroot.rootPtr,digit6);
+	printf("%s\n", FATroot.rootPtr);
 
 	sprintf(digit6, "%u", BLOCK_SIZE * START_OF_DATA / 16 + 1);	// returns the index of data as a string
 	printf("%s\n", digit6);
-	//strcpy(FATroot.dataPtr, digit6);
+	strcpy(FATroot.dataPtr, digit6);
+	printf("%s\n", FATroot.dataPtr);
 
 	sprintf(digit6, "%u", 3);	// returns the index of data as a string
 	printf("%s\n", digit6);
-	//strcpy(FATroot.nextPtr, digit6);
+	strcpy(FATroot.nextPtr, digit6);
+	printf("%s\n", FATroot.nextPtr);
+	
+	printf("%lu\n", sizeof(struct fat));
 
-	fwrite(&FATroot, sizeof(struct FAT), 1, fp);
+	printfat(FATroot);
+	fwrite(&FATroot, sizeof(struct fat), 1, fp);
 	printf("SYSTEM| FAT populated\n");	
 
 	/* --------------------- Init rootDir --------------------- */  
@@ -110,7 +120,7 @@ void createRoot() {
 	if (i == 0){  // prints debug information
 		printf("SYSTEM| blank root created\n");
 	}
-	struct rootDir root; // declare root Directory
+	struct rootDir root = {""}; // declare root Directory
 
 	strcpy(root.fileName, "/");
 	strcpy(root.ext, "DIR");
@@ -191,6 +201,13 @@ char *getcurrentTime(int i){  // retrieves current time EST (UTC -5)
 			printf("invalid call to getcurrentTime(int i)\n");
 		}
 	}
+}
+void printfat( struct fat fatentry){ // for debugging
+	printf("Valid bit: %s\n", fatentry.valid);
+	printf("File Name: %s\n", fatentry.fileName);
+	printf("rootPtr: %s\n", fatentry.rootPtr);
+	printf("dataPtr: %s\n", fatentry.dataPtr);
+	printf("nextPtr: %s\n", fatentry.nextPtr);
 }
 
 void printTime(){ // prints current time formatted   || FOR DEBUGGING
