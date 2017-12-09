@@ -13,7 +13,7 @@
 #define BLOCK_SIZE_LINES
 #define FILE_MAX 64   	// files can take up a max of 64 blocks  == 32768 MAX BYTES / 512 BLOCK_SIZE
 #define START_OF_FAT 0  // same as SEEK_SET
-#define START_OF_ROOT 1 // # of blocks until start of root
+#define START_OF_META 1 // # of blocks until start of meta
 #define START_OF_DATA 2	// # of block until start of data 
 
 
@@ -88,16 +88,16 @@ void createRoot() {
 	strcpy(FATroot.valid, "1");
 	strcpy(FATroot.fileName, "/");
 
-	sprintf(digit6, "%u", BLOCK_SIZE * START_OF_ROOT / 16 + 1); 	// 512 * START_OF_ROOT gives the bit starting number dividing by /16 + 1 gives line number
-	printf("%s\n", digit6);
+	sprintf(digit6, "%u", BLOCK_SIZE * START_OF_META / 16 + 1); 	// 512 * START_OF_META gives the bit starting number dividing by /16 + 1 gives line number
+	//printf("%s\n", digit6);
 	strcpy(FATroot.rootPtr,digit6);
 
 	sprintf(digit6, "%u", BLOCK_SIZE * START_OF_DATA / 16 + 1);	// returns the index of data as a string
-	printf("%s\n", digit6);
+	//printf("%s\n", digit6);
 	strcpy(FATroot.dataPtr, digit6);
 
 	sprintf(digit6, "%u", 3);	// returns the index of data as a string
-	printf("%s\n", digit6);
+	//printf("%s\n", digit6);
 	strcpy(FATroot.nextPtr, digit6);
 
 	//printfat(FATroot);
@@ -105,7 +105,7 @@ void createRoot() {
 	printf("SYSTEM| FAT populated\n");	
 
 	/* --------------------- Init meta --------------------- */  
-	i = fseek(fp, BLOCK_SIZE * START_OF_ROOT, SEEK_SET); // START OF ROOT
+	i = fseek(fp, BLOCK_SIZE * START_OF_META, SEEK_SET); // START OF META
 	//fputs("11111111", fp);
 
 	if (i == 0){  // prints debug information
@@ -143,13 +143,13 @@ char *findFatfree(){  // finds a free spot in the file allocation table
 	char buffer[6];
 	
 	fseek(fp, 0, SEEK_SET);	// nav to start of fat
-	for(int i = 0; i < (START_OF_ROOT * BLOCK_SIZE); i+= 32){
+	for(int i = 0; i < (START_OF_META * BLOCK_SIZE); i+= 32){
 		fseek(fp, i, SEEK_SET);
 		fread(valid, 1, 1, fp);
-		printf("read in bit:  %s\n", valid);
+		//printf("read in bit:  %s\n", valid);
 		if (strcmp(valid, "") == 0){
 			printf("SYSTEM| found free fat\n");
-			sprintf(digit6, "%u", i);
+			sprintf(digit6, "%u", i / 16 + 1); // convert #bits into line #
 			return digit6;
 		}
 	}
@@ -157,7 +157,21 @@ char *findFatfree(){  // finds a free spot in the file allocation table
 }
 
 char *findMetafree(){
+	char cmpName[12];
 
+	fseek(fp, BLOCK_SIZE * START_OF_META , SEEK_SET); // nav to start of meta
+	for(int i = 0; i < START_OF_DATA * BLOCK_SIZE; i+= 64){
+		fseek(fp, BLOCK_SIZE * START_OF_META + i, SEEK_SET);
+		fread(cmpName, 12, 1, fp);
+		printf("Read in: %s\n", cmpName);
+		if (strcmp(cmpName, "") == 0){
+			printf("SYSTEM| found free meta\n");
+			printf("%d\n", i);
+			sprintf(digit6, "%u", (i / 64 * 4) + (BLOCK_SIZE * START_OF_META / 16) + 1);
+			return digit6;
+		}
+	}
+	return "-1"; // couldn't find any free meta entries
 }
 
 char *getcurrentDate(int i){ // retrieves curretn date EST (UTC - 5)
@@ -250,18 +264,23 @@ void clear64bytes(){  //  resets a row of 64 bytes
 /*------------------------------ Called by user ------------------------------*/
 void fs_create(char *fileName){
 	printf("filename: %s\n", fileName);
-	char *fatIndex; 
-	
+	char *fatIndex;
+	char *metaIndex; 
 	//fputs(fileName, fp);
 
 		/* Find free fat entry */
-	fatIndex = findFatfree();
-	if (strcmp(fatIndex, "-1")  == 0){
+	fatIndex = findFatfree();	// returns line number of free fat sequence
+	printf("fatIndex: %s\n", fatIndex);
+	if (strcmp(fatIndex, "-1")  == 0){  // findFatfree() retruns -1 on error
 		printf("SYSTEM| Unable to locate free FAT \n");
 	}
 
-	/* Find free meta */
-	// metaIndex = findMetafree();
+		/* Find free meta */
+	metaIndex = findMetafree();	// returns line number of free meta sequence
+	printf("metaIndex: %s\n", metaIndex);
+	if (strcmp(metaIndex, "-1")  == 0){	// findMetafree() retruns -1 on error
+		printf("SYSTEM| Unable to locate free meta \n");
+	}
 }
 
 void fs_read(char *fileName){
@@ -288,7 +307,7 @@ void fs_info(char *fileName){
 	char cmin[3]= {'\0'};
 	char csec[3]= {'\0'};
 
-	fseek(fp, BLOCK_SIZE * START_OF_ROOT, SEEK_SET);  // navigate to root
+	fseek(fp, BLOCK_SIZE * START_OF_META, SEEK_SET);  // navigate to root
 
 	// if (filefound)
 	
