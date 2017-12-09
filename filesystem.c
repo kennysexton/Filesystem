@@ -56,6 +56,7 @@ struct rootDir{		// Each file has a 64 byte root directory  (8 files can be stor
 
 	/* Functions */
 void createRoot();
+char *findFatfree();
 char *getcurrentTime(int i);
 char *getcurrentDate(int i);
 void clear32bytes();
@@ -75,9 +76,8 @@ FILE setup(){ // Sets up the file system
 
 void createRoot() {
 	int i = 0;
-
 		/* --------------------- Init FAT --------------------- */
-	clear32bytes();
+	//clear32bytes();
 	fseek(fp, 0, SEEK_SET);		// START OF FAT
 
 	if (i == 0){  // prints debug information
@@ -85,31 +85,22 @@ void createRoot() {
 	}
 	struct fat FATroot = {""}; // declare as empty
 
-	//fwrite(&FATroot, sizeof(struct FAT), 1, fp);
-	//strcpy(FATroot.valid, NULL);
 	strcpy(FATroot.valid, "1");
 	strcpy(FATroot.fileName, "/");
-	//printf("%s\n", FATroot.rootPtr);
-
 
 	sprintf(digit6, "%u", BLOCK_SIZE * START_OF_ROOT / 16 + 1); 	// 512 * START_OF_ROOT gives the bit starting number dividing by /16 + 1 gives line number
 	printf("%s\n", digit6);
 	strcpy(FATroot.rootPtr,digit6);
-	printf("%s\n", FATroot.rootPtr);
 
 	sprintf(digit6, "%u", BLOCK_SIZE * START_OF_DATA / 16 + 1);	// returns the index of data as a string
 	printf("%s\n", digit6);
 	strcpy(FATroot.dataPtr, digit6);
-	printf("%s\n", FATroot.dataPtr);
 
 	sprintf(digit6, "%u", 3);	// returns the index of data as a string
 	printf("%s\n", digit6);
 	strcpy(FATroot.nextPtr, digit6);
-	printf("%s\n", FATroot.nextPtr);
-	
-	printf("%lu\n", sizeof(struct fat));
 
-	printfat(FATroot);
+	//printfat(FATroot);
 	fwrite(&FATroot, sizeof(struct fat), 1, fp);
 	printf("SYSTEM| FAT populated\n");	
 
@@ -148,7 +139,24 @@ void createRoot() {
 	printf("SYSTEM| root populated\n");
 }
 
+char *findFatfree(){  // finds a free spot in the file allocation table
+	char valid[1];
+	char buffer[6];
+	
 
+	fseek(fp, 0, SEEK_SET);	// nav to start of fat
+	for(int i = 0; i < (START_OF_ROOT * BLOCK_SIZE); i+= 32){
+		fseek(fp, i, SEEK_SET);
+		fread(valid, 1, 1, fp);
+		printf("read in bit:  %s\n", valid);
+		if (strcmp(valid, "") == 0){
+			printf("SYSTEM| found free fat\n");
+			sprintf(digit6, "%u", i);
+			return digit6;
+		}
+	}
+	return "-1"; // Couldn't find a free FAT entry
+}
 
 char *getcurrentDate(int i){ // retrieves curretn date EST (UTC - 5)
 	time_t now;
@@ -239,10 +247,14 @@ void clear64bytes(){  //  resets a row of 64 bytes
 
 /*------------------------------ Called by user ------------------------------*/
 void fs_create(char *fileName){
-	printf("%s", fileName);
-
-	fseek(fp, 0, SEEK_SET);	
-	fputs(fileName, fp);
+	printf("filename: %s\n", fileName);
+	char *fatIndex; 
+	
+	//fputs(fileName, fp);
+	fatIndex = findFatfree();
+	if (strcmp(fatIndex, "-1")  == 0){
+		printf("SYSTEM| Unable to locate free FAT \n");
+	}
 
 }
 
