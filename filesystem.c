@@ -35,7 +35,7 @@ struct fat{		// fat entries are 32 byte (16 fat entries per block)
 	unsigned char nextPtr[6];	// 6 bytes
 };
 
-struct rootDir{		// Each file has a 64 byte root directory  (8 files can be stored in 1 block)
+struct meta{		// Each file has a 64 byte meta sequence  (8 files can be stored in 1 block)
 	unsigned char fileName[12];  	// 12 bytes
 	unsigned char ext[3]; 			// 3 bytes
 	unsigned char create_year[4];	// 4 bytes
@@ -50,13 +50,13 @@ struct rootDir{		// Each file has a 64 byte root directory  (8 files can be stor
 	unsigned char modify_hour[2]; 	// 2 bytes
 	unsigned char modify_min[2]; 	// 2 bytes
 	unsigned char modify_sec[2]; 	// 2 bytes
-	unsigned char starting_block[2]; 	// 2 bytes
-	unsigned char file_size[4];		// 4 bytes
+	unsigned char file_size[6];		// 6 bytes
 };
 
 	/* Functions */
 void createRoot();
 char *findFatfree();
+char *findMetafree();
 char *getcurrentTime(int i);
 char *getcurrentDate(int i);
 void clear32bytes();
@@ -104,14 +104,14 @@ void createRoot() {
 	fwrite(&FATroot, sizeof(struct fat), 1, fp);
 	printf("SYSTEM| FAT populated\n");	
 
-	/* --------------------- Init rootDir --------------------- */  
+	/* --------------------- Init meta --------------------- */  
 	i = fseek(fp, BLOCK_SIZE * START_OF_ROOT, SEEK_SET); // START OF ROOT
 	//fputs("11111111", fp);
 
 	if (i == 0){  // prints debug information
 		printf("SYSTEM| blank root created\n");
 	}
-	struct rootDir root = {""}; // declare root Directory
+	struct meta root = {""}; // declare root Directory
 
 	strcpy(root.fileName, "/");
 	strcpy(root.ext, "DIR");
@@ -132,10 +132,9 @@ void createRoot() {
 	strcpy(root.modify_min, getcurrentTime(2));
 	strcpy(root.modify_sec, getcurrentTime(3));
 
-	strcpy(root.starting_block, "00");
-	strcpy(root.file_size, "0000");
+	strcpy(root.file_size, "000000");
 
-	fwrite(&root, sizeof(struct rootDir), 1, fp);
+	fwrite(&root, sizeof(struct meta), 1, fp);
 	printf("SYSTEM| root populated\n");
 }
 
@@ -143,7 +142,6 @@ char *findFatfree(){  // finds a free spot in the file allocation table
 	char valid[1];
 	char buffer[6];
 	
-
 	fseek(fp, 0, SEEK_SET);	// nav to start of fat
 	for(int i = 0; i < (START_OF_ROOT * BLOCK_SIZE); i+= 32){
 		fseek(fp, i, SEEK_SET);
@@ -156,6 +154,10 @@ char *findFatfree(){  // finds a free spot in the file allocation table
 		}
 	}
 	return "-1"; // Couldn't find a free FAT entry
+}
+
+char *findMetafree(){
+
 }
 
 char *getcurrentDate(int i){ // retrieves curretn date EST (UTC - 5)
@@ -235,7 +237,7 @@ void printTime(){ // prints current time formatted   || FOR DEBUGGING
 	}
 }
 
-void clear32bytes(){  //  resets a row of 32 bytes 
+void clear32bytes(){  //  resets a row of 32 bytes BORKEN ATM
 	fwrite(blank32, 1, sizeof(blank32), fp);
 	//TODO: may add a fp reset
 }
@@ -251,11 +253,15 @@ void fs_create(char *fileName){
 	char *fatIndex; 
 	
 	//fputs(fileName, fp);
+
+		/* Find free fat entry */
 	fatIndex = findFatfree();
 	if (strcmp(fatIndex, "-1")  == 0){
 		printf("SYSTEM| Unable to locate free FAT \n");
 	}
 
+	/* Find free meta */
+	// metaIndex = findMetafree();
 }
 
 void fs_read(char *fileName){

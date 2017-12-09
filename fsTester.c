@@ -62,6 +62,7 @@ void commandChoice(char str[]){
 		printf("Enter the name of file: ");
 		scanf("%8s", fileName);
 
+		// invalid names == ""
 		fs_create(fileName);
 
 		//printf("%s created\n", fileName);
