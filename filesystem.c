@@ -310,7 +310,6 @@ void fs_info(char *fileName){
 	fseek(fp, BLOCK_SIZE * START_OF_META, SEEK_SET);  // navigate to root
 
 	// if (filefound)
-	
 	fread(fName, 1, 12, fp);
 	fread(fext, 1, 3, fp);
 	fread(cyear, 1, 4, fp);
