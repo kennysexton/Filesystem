@@ -32,7 +32,7 @@ char *blank64[64] = { NULL };
 struct fat{		// fat entries are 32 byte (16 fat entries per block)
 	unsigned char valid[1];		// 1 byte
 	unsigned char fileName[12]; // 12 bytes
-	unsigned char rootPtr[6];	// 6 bytes
+	unsigned char metaPtr[6];	// 6 bytes
 	unsigned char dataPtr[6]; 	// 6 bytes
 	unsigned char nextPtr[6];	// 6 bytes
 };
@@ -91,13 +91,13 @@ void createRoot() {
 	strcpy(FATroot.fileName, "/");
 
 	sprintf(digit6, "%u", BLOCK_SIZE * START_OF_META / 16 + 1); 	// 512 * START_OF_META gives the bit starting number dividing by /16 + 1 gives line number
-	strcpy(FATroot.rootPtr,digit6);
+	strcpy(FATroot.metaPtr,digit6);
 
 	sprintf(digit6, "%u", BLOCK_SIZE * START_OF_DATA / 16 + 1);	// returns the index of data as a string
 	strcpy(FATroot.dataPtr, digit6);
 
-	sprintf(digit6, "%u", 3);	// returns the index of data as a string
-	strcpy(FATroot.nextPtr, digit6);
+	//sprintf(digit6, "%u", 3);	// returns the index of data as a string
+	strcpy(FATroot.nextPtr, "-1");
 
 	//printfat(FATroot);
 	fwrite(&FATroot, sizeof(struct fat), 1, fp);
@@ -247,10 +247,11 @@ char *getcurrentTime(int i){  // retrieves current time EST (UTC -5)
 		}
 	}
 }
+
 void printfat( struct fat fatentry){ // for debugging
 	printf("Valid bit: %s\n", fatentry.valid);
 	printf("File Name: %s\n", fatentry.fileName);
-	printf("rootPtr: %s\n", fatentry.rootPtr);
+	printf("metaPtr: %s\n", fatentry.metaPtr);
 	printf("dataPtr: %s\n", fatentry.dataPtr);
 	printf("nextPtr: %s\n", fatentry.nextPtr);
 }
@@ -307,6 +308,24 @@ void fs_create(char *fileName){
 		/* Find free meta */
 	dataIndex = findDatafree();
 	printf("dataIndex: %s \n", dataIndex);
+	if (strcmp(dataIndex, "-1")  == 0){	// findMetafree() retruns -1 on error
+		printf("SYSTEM| Unable to locate a free data block \n");
+	}
+
+	printf("FAT index as #: %ld\n", atol(fatIndex));
+
+	fseek(fp, atol(fatIndex), SEEK_SET);
+
+	struct fat newFile = {""};
+
+	strcpy(newFile.valid, "1");
+	strcpy(newFile.fileName, fileName);
+	strcpy(newFile.metaPtr, metaIndex);
+	strcpy(newFile.dataPtr, dataIndex);
+	strcpy(newFile.nextPtr, "-1");
+
+	fwrite(&newFile, sizeof(struct fat), 1, fp);
+	printf("SYSTEM| New FAT entry\n");
 }
 
 void fs_read(char *fileName){
