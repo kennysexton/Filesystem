@@ -9,12 +9,14 @@
 #include <time.h> 	// get current time
 
 #define DRIVE "Drive2MB"
-#define BLOCK_SIZE 512  //bytes
+#define TOTAL_BLOCKS 244 	// number of avalible blocks at 2MB
+#define BLOCK_SIZE 512  	//bytes
 #define BLOCK_SIZE_LINES
 #define FILE_MAX 64   	// files can take up a max of 64 blocks  == 32768 MAX BYTES / 512 BLOCK_SIZE
 #define START_OF_FAT 0  // same as SEEK_SET
 #define START_OF_META 1 // # of blocks until start of meta
-#define START_OF_DATA 2	// # of block until start of data 
+#define START_OF_DATA 3	// # of block until start of data 
+
 
 
 	/* Globals */
@@ -89,20 +91,21 @@ void createRoot() {
 	strcpy(FATroot.fileName, "/");
 
 	sprintf(digit6, "%u", BLOCK_SIZE * START_OF_META / 16 + 1); 	// 512 * START_OF_META gives the bit starting number dividing by /16 + 1 gives line number
-	//printf("%s\n", digit6);
 	strcpy(FATroot.rootPtr,digit6);
 
 	sprintf(digit6, "%u", BLOCK_SIZE * START_OF_DATA / 16 + 1);	// returns the index of data as a string
-	//printf("%s\n", digit6);
 	strcpy(FATroot.dataPtr, digit6);
 
 	sprintf(digit6, "%u", 3);	// returns the index of data as a string
-	//printf("%s\n", digit6);
 	strcpy(FATroot.nextPtr, digit6);
 
 	//printfat(FATroot);
 	fwrite(&FATroot, sizeof(struct fat), 1, fp);
-	printf("SYSTEM| FAT populated\n");	
+	printf("SYSTEM| FAT populated\n");
+
+	/* --------------------- Init data --------------------- */ 
+	fseek(fp, BLOCK_SIZE * START_OF_DATA, SEEK_SET);
+	fputs("ROOT DATA BLOCK", fp);
 
 	/* --------------------- Init meta --------------------- */  
 	i = fseek(fp, BLOCK_SIZE * START_OF_META, SEEK_SET); // START OF META
@@ -138,9 +141,9 @@ void createRoot() {
 	printf("SYSTEM| root populated\n");
 }
 
+/*------------------------------ Find Free ------------------------------*/
 char *findFatfree(){  // finds a free spot in the file allocation table
 	char valid[1];
-	char buffer[6];
 	
 	fseek(fp, 0, SEEK_SET);	// nav to start of fat
 	for(int i = 0; i < (START_OF_META * BLOCK_SIZE); i+= 32){
@@ -166,12 +169,30 @@ char *findMetafree(){
 		printf("Read in: %s\n", cmpName);
 		if (strcmp(cmpName, "") == 0){
 			printf("SYSTEM| found free meta\n");
-			printf("%d\n", i);
+			// printf("%d\n", i);
 			sprintf(digit6, "%u", (i / 64 * 4) + (BLOCK_SIZE * START_OF_META / 16) + 1);
 			return digit6;
 		}
 	}
 	return "-1"; // couldn't find any free meta entries
+}
+
+char *findDatafree(){
+	char valid[1]; // data block is empty if first bit is NULL
+
+	fseek(fp, BLOCK_SIZE * START_OF_DATA, SEEK_SET);
+	for(int i= 0; i <= (TOTAL_BLOCKS - 3) * 512 ; i+= 512){
+		fseek(fp, BLOCK_SIZE * START_OF_DATA + i, SEEK_SET);
+		printf("%u\n", i );
+		fread(valid, 1, 1, fp); // read in first byte of data block
+		if(strcmp(valid, "") == 0){ // if first byte is null,  then block is empty
+			printf("SYSTEM| found free data\n");
+			// printf("%d\n", i);
+			sprintf(digit6, "%u", (i / 512 * 32) + (BLOCK_SIZE * START_OF_DATA / 16) + 1);
+			return digit6;
+		}
+	}
+	return "-1";	// couldn't find any free data blocks
 }
 
 char *getcurrentDate(int i){ // retrieves curretn date EST (UTC - 5)
@@ -265,7 +286,8 @@ void clear64bytes(){  //  resets a row of 64 bytes
 void fs_create(char *fileName){
 	printf("filename: %s\n", fileName);
 	char *fatIndex;
-	char *metaIndex; 
+	char *metaIndex;
+	char *dataIndex; 
 	//fputs(fileName, fp);
 
 		/* Find free fat entry */
@@ -281,6 +303,10 @@ void fs_create(char *fileName){
 	if (strcmp(metaIndex, "-1")  == 0){	// findMetafree() retruns -1 on error
 		printf("SYSTEM| Unable to locate free meta \n");
 	}
+
+		/* Find free meta */
+	dataIndex = findDatafree();
+	printf("dataIndex: %s \n", dataIndex);
 }
 
 void fs_read(char *fileName){
