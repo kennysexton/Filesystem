@@ -151,8 +151,8 @@ char *findFatfree(){  // finds a free spot in the file allocation table
 		fread(valid, 1, 1, fp);
 		//printf("read in bit:  %s\n", valid);
 		if (strcmp(valid, "") == 0){
-			printf("SYSTEM| found free fat\n");
 			sprintf(digit6, "%u", i / 16 + 1); // convert #bits into line #
+			printf("SYSTEM| found free fat @ %s\n", digit6);
 			return digit6;
 		}
 	}
@@ -166,11 +166,10 @@ char *findMetafree(){
 	for(int i = 0; i < START_OF_DATA * BLOCK_SIZE; i+= 64){
 		fseek(fp, BLOCK_SIZE * START_OF_META + i, SEEK_SET);
 		fread(cmpName, 12, 1, fp);
-		printf("Read in: %s\n", cmpName);
+		//printf("Read in: %s\n", cmpName);
 		if (strcmp(cmpName, "") == 0){
-			printf("SYSTEM| found free meta\n");
-			// printf("%d\n", i);
 			sprintf(digit6, "%u", (i / 64 * 4) + (BLOCK_SIZE * START_OF_META / 16) + 1);
+			printf("SYSTEM| found free meta @ %s\n", digit6);
 			return digit6;
 		}
 	}
@@ -183,12 +182,11 @@ char *findDatafree(){
 	fseek(fp, BLOCK_SIZE * START_OF_DATA, SEEK_SET);
 	for(int i= 0; i <= (TOTAL_BLOCKS - 3) * 512 ; i+= 512){
 		fseek(fp, BLOCK_SIZE * START_OF_DATA + i, SEEK_SET);
-		printf("%u\n", i );
+		//printf("%u\n", i );
 		fread(valid, 1, 1, fp); // read in first byte of data block
 		if(strcmp(valid, "") == 0){ // if first byte is null,  then block is empty
-			printf("SYSTEM| found free data\n");
-			// printf("%d\n", i);
 			sprintf(digit6, "%u", (i / 512 * 32) + (BLOCK_SIZE * START_OF_DATA / 16) + 1);
+			printf("SYSTEM| found free data @ %s\n", digit6);
 			return digit6;
 		}
 	}
@@ -286,27 +284,29 @@ void clear64bytes(){  //  resets a row of 64 bytes
 /*------------------------------ Called by user ------------------------------*/
 void fs_create(char *fileName){
 	printf("filename: %s\n", fileName);
+	char *retrunIndex;
 	char *fatIndex;
 	char *metaIndex;
 	char *dataIndex; 
 	//fputs(fileName, fp);
 
 		/* Find free fat entry */
-	fatIndex = findFatfree();	// returns line number of free fat sequence
+	fatIndex = strdup(findFatfree());	// returns line number of free fat sequence
+
 	printf("fatIndex: %s\n", fatIndex);
 	if (strcmp(fatIndex, "-1")  == 0){  // findFatfree() retruns -1 on error
 		printf("SYSTEM| Unable to locate free FAT \n");
 	}
 
 		/* Find free meta */
-	metaIndex = findMetafree();	// returns line number of free meta sequence
+	metaIndex = strdup(findMetafree());	// returns line number of free meta sequence
 	printf("metaIndex: %s\n", metaIndex);
 	if (strcmp(metaIndex, "-1")  == 0){	// findMetafree() retruns -1 on error
 		printf("SYSTEM| Unable to locate free meta \n");
 	}
 
 		/* Find free meta */
-	dataIndex = findDatafree();
+	dataIndex = strdup(findDatafree());
 	printf("dataIndex: %s \n", dataIndex);
 	if (strcmp(dataIndex, "-1")  == 0){	// findMetafree() retruns -1 on error
 		printf("SYSTEM| Unable to locate a free data block \n");
@@ -314,7 +314,7 @@ void fs_create(char *fileName){
 
 	printf("FAT index as #: %ld\n", atol(fatIndex));
 
-	fseek(fp, atol(fatIndex), SEEK_SET);
+	fseek(fp, (atol(fatIndex) - 1) * 16, SEEK_SET); // convert line number back to bit seek value
 
 	struct fat newFile = {""};
 
