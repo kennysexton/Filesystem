@@ -4,8 +4,9 @@
 FILE setup();
 int closefs(FILE *fp);
 void fs_create(char *fileName);
+void fs_delete(char *fileName);
 void fs_read(char *fileName);
-void fs_write(char *fileName, char *datablock);
+void fs_write(char *fileName, char *writeData);
 void fs_info(char *fileName);
 void fs_exit();
 

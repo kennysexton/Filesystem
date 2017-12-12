@@ -13,7 +13,6 @@
 #define CYAN_BOLD  "\033[1m\033[36m"
 #define YELLOW_BOLD   "\033[1m\033[33m"
 #define BRIGHT_RED "\033[1m\033[31m"
-
 #define COLOR_RESET  "\033[0m"
 
 
@@ -67,20 +66,22 @@ void commandChoice(char str[]){
 		// invalid names == ""
 		fs_create(fileName);
 
-		//printf("%s created\n", fileName);
-
 		//divide fileName and .txt if applicable
 		//fs_create(char *fileName, char *extension)
 	}
 	else if (strcmp(str, "delete") == 0){
-		printf("delete selected\n");
+		printf("Enter the name of file: ");
+		scanf("%12s", fileName);
+		fs_delete(fileName);
 	}
-	else if (strcmp(str, "read") == 0){
+	else if (strcmp(str, "read") == 0){					// read data blocks of a file
+		printf("Enter the name of file: ");
+		scanf("%12s", fileName);
 		fs_read(fileName);
 	}
 	else if (strcmp(str, "write") == 0){
 		
-		char *dataBlock = calloc(32768, sizeof(char));	//32768
+		char *dataBlock = calloc(32768, sizeof(char));	// create an empty larger array
 		char c;
 		int i;
 
@@ -101,7 +102,6 @@ void commandChoice(char str[]){
 		fs_write(fileName, dataBlock);
 
 		free(dataBlock);
-
 	}
 	// up
 
@@ -111,7 +111,6 @@ void commandChoice(char str[]){
 
 		fs_info(fileName);
 	}
-
 	else if (strcmp(str, "clear") == 0){ // clears screen
 		system("clear");	
 	}

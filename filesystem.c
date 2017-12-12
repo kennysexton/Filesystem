@@ -17,7 +17,9 @@
 #define START_OF_META 1 // # of blocks until start of meta
 #define START_OF_DATA 3	// # of block until start of data 
 
-
+	/* Colors */
+#define BRIGHT_RED "\033[1m\033[31m"
+#define COLOR_RESET  "\033[0m"
 
 	/* Globals */
 FILE *fp; // same file pointer used by all functions
@@ -26,7 +28,6 @@ char digit4[5];
 char digit6[6]; // Used for internal ptrs
 char *blank32[32] = { NULL };
 char *blank64[64] = { NULL };
-
 
 	/* Structs */
 struct fat{		// fat entries are 32 byte (16 fat entries per block)
@@ -53,6 +54,10 @@ struct meta{		// Each file has a 64 byte meta sequence  (8 files can be stored i
 	unsigned char modify_min[2]; 	// 2 bytes
 	unsigned char modify_sec[2]; 	// 2 bytes
 	unsigned char file_size[6];		// 6 bytes
+};
+
+struct data{		// used to delete data blocks (via fs_delete)
+	unsigned char blank[512];
 };
 
 	/* Functions */
@@ -91,7 +96,7 @@ void createRoot() {
 	strcpy(FATroot.valid, "1");
 	strcpy(FATroot.fileName, "/");
 
-	sprintf(digit6, "%u", BLOCK_SIZE * START_OF_META / 16 + 1); 	// 512 * START_OF_META gives the bit starting number dividing by /16 + 1 gives line number
+	sprintf(digit6, "%u", BLOCK_SIZE * START_OF_META / 16 + 1); // 512 * START_OF_META gives the bit starting number dividing by /16 + 1 gives line number
 	strcpy(FATroot.metaPtr,digit6);
 
 	sprintf(digit6, "%u", BLOCK_SIZE * START_OF_DATA / 16 + 1);	// returns the index of data as a string
@@ -300,7 +305,8 @@ void clear64bytes(){  //  resets a row of 64 bytes
 	//TODO: may add a fp reset
 }
 
-/*------------------------------ Called by user ------------------------------*/
+/*------------------------------------------------------------------- Called by user -------------------------------------------------------------------*/
+/* ------------------------------ Create ------------------------------ */
 void fs_create(char *fileName){
 	printf("filename: %s\n", fileName);
 	char *retrunIndex;
@@ -330,9 +336,6 @@ void fs_create(char *fileName){
 	if (strcmp(dataIndex, "-1")  == 0){	// findMetafree() retruns -1 on error
 		printf("SYSTEM| Unable to locate a free data block \n");
 	}
-
-	printf("FAT index as #: %ld\n", atol(fatIndex));
-
 	fseek(fp, (atol(fatIndex) - 1) * 16, SEEK_SET); // convert line number back to bit seek value
 
 	struct fat newFile = {""};
@@ -345,38 +348,137 @@ void fs_create(char *fileName){
 
 	fwrite(&newFile, sizeof(struct fat), 1, fp);
 	printf("SYSTEM| New FAT entry\n");
+
+		/* Create meta entry */
+	fseek(fp, (atol(metaIndex) - 1) * 16, SEEK_SET); 				// convert String -> number
+
+	struct meta newMeta = {""};										// create an empty meta struct
+
+	strcpy(newMeta.fileName, fileName);
+	strcpy(newMeta.ext, "");
+
+	strcpy(newMeta.create_year, getcurrentDate(1));
+	strcpy(newMeta.create_month, getcurrentDate(2));
+	strcpy(newMeta.create_day, getcurrentDate(3));	
+
+	strcpy(newMeta.create_hour, getcurrentTime(1));
+	strcpy(newMeta.create_min, getcurrentTime(2));
+	strcpy(newMeta.create_sec, getcurrentTime(3));
+
+	strcpy(newMeta.modify_year, getcurrentDate(1));
+	strcpy(newMeta.modify_month, getcurrentDate(2));
+	strcpy(newMeta.modify_day, getcurrentDate(3));	
+
+	strcpy(newMeta.modify_hour, getcurrentTime(1));
+	strcpy(newMeta.modify_min, getcurrentTime(2));
+	strcpy(newMeta.modify_sec, getcurrentTime(3));
+	strcpy(newMeta.file_size, "000000");
+
+	fwrite(&newMeta, sizeof(struct meta), 1, fp);
+	printf("SYSTEM| meta populated\n");
+
+		/* Reserve Data */
+	fseek(fp, (atol(dataIndex) - 1) * 16, SEEK_SET); 	// place a 1 at the start of data bit
+	fputs("1", fp);										// this is done so that findDataFree() will see that this block is reserved
 }
 
-void fs_read(char *fileName){
-	char buffer[12];
-
-	fseek(fp, 0, SEEK_SET);	
-	fread(buffer, 1, 12, fp);
-
-	for (int i = 0; i < sizeof(buffer); ++i)
-	{
-		printf("%c", buffer[i]);
-	}
-	puts("");
-}
-
-void fs_write(char *fileName, char *datablock){
+/* ------------------------------ Delete ------------------------------ */
+void fs_delete(char *fileName){
 	int fileIndex = 0;
-	printf("filename: %s\n", fileName);
+	char dataPtr[6];
+	char metaPtr[6];
 
 	fileIndex = findFileByName(fileName); //returns the FAT index of this file
-	printf("fileIndex: %d\n", fileIndex);
+	if (fileIndex == -1){	// file does not exist
+		printf(BRIGHT_RED "FILE NOT FOUND: %s\n" COLOR_RESET, fileName);
+		return;
+	}
+	
+	/* Delete Data Block */
+	fseek(fp, (fileIndex - 1) * 16, SEEK_SET);	// seek to the FAT index
+	fseek(fp, 19, SEEK_CUR);					// offset of dataPtr
+	fread(dataPtr, 1, 6, fp);
+	fseek(fp, (atol(dataPtr) - 1) * 16, SEEK_SET);
+	struct data clearBlock = {""};  // write an empty 512 blocks at file pointer
+	fwrite(&clearBlock, sizeof(struct data), 1, fp);
+
+	/* Delete meta data */
+	fseek(fp, (fileIndex - 1) * 16, SEEK_SET);	// seek to the FAT index
+	fseek(fp, 13, SEEK_CUR);					// offset of metaPtr
+	fread(metaPtr, 1, 6, fp);
+	fseek(fp, (atol(metaPtr) - 1) * 16, SEEK_SET);
+
+	struct meta clearMeta = {""}; // write an empty 64 byte bank to clear the meta data for file
+	fwrite(&clearMeta, sizeof(struct meta), 1, fp);
+
+	/* Delete FAT data */
+	fseek(fp, (fileIndex - 1) * 16, SEEK_SET);	// seek to the FAT index
+	struct fat clearfat = {""};
+	fwrite(&clearfat, sizeof(struct fat), 1, fp);
+
+
+
+
+
+	
+}
+/* ------------------------------ Read ------------------------------ */
+void fs_read(char *fileName){
+	int fileIndex = 0;
+	char buffer[512];
+	char dataPtr[6];
+	long dataPtrAsNum;
+
+	fileIndex = findFileByName(fileName); //returns the FAT index of this file
+	if (fileIndex == -1){	// file does not exist
+		printf(BRIGHT_RED "FILE NOT FOUND: %s\n" COLOR_RESET, fileName);
+		return;
+	}
+	fseek(fp, (fileIndex - 1) * 16, SEEK_SET);	// seek to the FAT index
+
+	fseek(fp, 19, SEEK_CUR); 					// seek to the offset of dataPtr
+	fread(dataPtr , 1, 6, fp); 					// read back dataPtr
+	dataPtrAsNum = atol(dataPtr); 				// convert string -> number
+
+	fseek(fp, (dataPtrAsNum - 1) * 16, SEEK_SET);
+	fread(buffer, 1, 512, fp);
+
+	for (int i = 0; i < 512; i++){
+		printf("%c", buffer[i]);
+	}
+	printf("\n");
+}
+/* ------------------------------ Write ------------------------------ */
+void fs_write(char *fileName, char *writeData){
+	int fileIndex = 0;
+	int inputLength = 0;
+	char dataPtr[6];
+	long dataPtrAsNum; 
+
+	fileIndex = findFileByName(fileName); //returns the FAT index of this file
+	//printf("fileIndex: %d\n", fileIndex);
 	if (fileIndex == -1){	// file does not exist
 		printf("FILE NOT FOUND: %s\n", fileName);
 		return;
 	}
+	inputLength = strlen(writeData);
 
+	if(inputLength >= 512){	// data will have to take more than one block
+		printf("SYSTEM| allocating more blocks\n");
+		return;	// Not yet implemented
+	}
 
+	fseek(fp, (fileIndex - 1) * 16, SEEK_SET);	// seek to the FAT index
+	fseek(fp, 19, SEEK_CUR); 					// seek to the offset of dataPtr
 
+	fread(dataPtr , 1, 6, fp); 					// read back dataPtr
+	dataPtrAsNum = atol(dataPtr); 				// convert string -> number
+
+	fseek(fp, (dataPtrAsNum - 1) * 16, SEEK_SET);
+	fwrite(writeData, 1, BLOCK_SIZE, fp);
 }
-
+/* ------------------------------ Info ------------------------------ */
 void fs_info(char *fileName){
-
 	char fName[13] = {'\0'};
 	char fext[4] = {'\0'};
 	char cyear[5] = {'\0'};
@@ -386,9 +488,23 @@ void fs_info(char *fileName){
 	char cmin[3]= {'\0'};
 	char csec[3]= {'\0'};
 
-	fseek(fp, BLOCK_SIZE * START_OF_META, SEEK_SET);  // navigate to root
+	int fileIndex = 0;
+	char metaPtr[6];
+	long metaPtrAsNum;
 
-	// if (filefound)
+	fileIndex = findFileByName(fileName); //returns the FAT index of this file
+	if (fileIndex == -1){	// file does not exist
+		printf("FILE NOT FOUND: %s\n", fileName);
+		return;
+	}
+	fseek(fp, (fileIndex - 1) * 16, SEEK_SET);	// seek to the FAT index
+	fseek(fp, 13, SEEK_CUR); 					// seek to the offset of metaPtr
+
+	fread(metaPtr , 1, 6, fp); 					// read back metaPtr
+	metaPtrAsNum = atol(metaPtr); 				// convert string -> number
+
+	fseek(fp,(metaPtrAsNum - 1) * 16, SEEK_SET);	// Seek to files metaPtr block
+
 	fread(fName, 1, 12, fp);
 	fread(fext, 1, 3, fp);
 	fread(cyear, 1, 4, fp);
@@ -402,9 +518,8 @@ void fs_info(char *fileName){
 	printf("Ext: %3s\n", fext);
 	printf("Created: %s-%s-%s at %s:%s:%s \n", cmon, cday, cyear, chour, cmin, csec);
 	printf("Modified: %s-%s-%s at %s:%s:%s \n", cmon, cday, cyear, chour, cmin, csec);
-
 }
-
+/* ------------------------------ Exit ------------------------------ */
 void fs_exit(){ // closes the disk,  and exits
 	fclose(fp);
 	printf("SYSTEM| shutdown\n");
