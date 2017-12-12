@@ -59,6 +59,7 @@ struct meta{		// Each file has a 64 byte meta sequence  (8 files can be stored i
 void createRoot();
 char *findFatfree();
 char *findMetafree();
+int findFileByName(char *fileName);
 char *getcurrentTime(int i);
 char *getcurrentDate(int i);
 void clear32bytes();
@@ -191,6 +192,24 @@ char *findDatafree(){
 		}
 	}
 	return "-1";	// couldn't find any free data blocks
+}
+
+int findFileByName(char *fileName){  // finds a free spot in the file allocation table
+	char cmpName[12];
+	int fileIndex = 0;
+	
+	fseek(fp, 0, SEEK_SET);	// nav to start of fat
+	for(int i = 0; i < (START_OF_META * BLOCK_SIZE); i+= 32){
+		fseek(fp, i + 1, SEEK_SET);
+		fread(cmpName,12, 1, fp);
+		//printf("read in bit:  %s\n", valid);
+		if (strcmp(cmpName, fileName) == 0){
+			fileIndex = i / 16 + 1; // convert #bits into line #
+			printf("SYSTEM| found file @ %d\n", fileIndex);
+			return fileIndex;
+		}
+	}
+	return -1; // Couldn't find file
 }
 
 char *getcurrentDate(int i){ // retrieves curretn date EST (UTC - 5)
@@ -339,6 +358,21 @@ void fs_read(char *fileName){
 		printf("%c", buffer[i]);
 	}
 	puts("");
+}
+
+void fs_write(char *fileName, char *datablock){
+	int fileIndex = 0;
+	printf("filename: %s\n", fileName);
+
+	fileIndex = findFileByName(fileName); //returns the FAT index of this file
+	printf("fileIndex: %d\n", fileIndex);
+	if (fileIndex == -1){	// file does not exist
+		printf("FILE NOT FOUND: %s\n", fileName);
+		return;
+	}
+
+
+
 }
 
 void fs_info(char *fileName){

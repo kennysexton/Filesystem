@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 #include "filesystem.h"
 
 	/* Colors */
@@ -14,6 +15,7 @@
 #define BRIGHT_RED "\033[1m\033[31m"
 
 #define COLOR_RESET  "\033[0m"
+
 
 	/* Functions */
 void welcome();
@@ -60,15 +62,15 @@ void commandChoice(char str[]){
 	if (strcmp(str, "create") == 0){ // needs extension handling
 		printf("create selected\n");
 		printf("Enter the name of file: ");
-		scanf("%8s", fileName);
+		scanf("%12s", fileName);
 
 		// invalid names == ""
 		fs_create(fileName);
 
 		//printf("%s created\n", fileName);
 
-		//divide filename and .txt if applicable
-		//fs_create(char *filename, char *extension)
+		//divide fileName and .txt if applicable
+		//fs_create(char *fileName, char *extension)
 	}
 	else if (strcmp(str, "delete") == 0){
 		printf("delete selected\n");
@@ -78,6 +80,28 @@ void commandChoice(char str[]){
 	}
 	else if (strcmp(str, "write") == 0){
 		
+		char *dataBlock = calloc(32768, sizeof(char));	//32768
+		char c;
+		int i;
+
+		printf("create selected\n");
+		printf("Enter the name of file: ");
+		scanf("%12s", fileName);
+		printf("--- Write --- \n");
+		
+		if(read(STDIN_FILENO, dataBlock, 32768) < 0){
+
+		}
+		// while(c = getchar() != EOF){
+		// 	printf("%c\n", c);
+		// }
+
+		//printf("%s\n",  dataBlock);
+
+		fs_write(fileName, dataBlock);
+
+		free(dataBlock);
+
 	}
 	// up
 
