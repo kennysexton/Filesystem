@@ -49,7 +49,7 @@ void displayOptions(){
 	printf(YELLOW_BOLD "Here are your options:\n" COLOR_RESET);
 	printf("\"create\"\t\"delete\" \n");
 	printf("\"read\"  \t\"write\" \n");
-	printf("\"up\"    \t\"down\" \n");
+	// printf("\"up\"    \t\"down\" \n");
 	printf("\"info\"  \t\"clear\" \n");
 	printf("\"list\"  \t\"exit\" \n");
 }
@@ -91,14 +91,7 @@ void commandChoice(char str[]){
 		printf("--- Write --- \n");
 		
 		if(read(STDIN_FILENO, dataBlock, 32768) < 0){
-
 		}
-		// while(c = getchar() != EOF){
-		// 	printf("%c\n", c);
-		// }
-
-		//printf("%s\n",  dataBlock);
-
 		fs_write(fileName, dataBlock);
 
 		free(dataBlock);

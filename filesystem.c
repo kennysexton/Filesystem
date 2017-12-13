@@ -63,6 +63,10 @@ struct data{		// used to delete data blocks (via fs_delete)
 	unsigned char blank[512];
 };
 
+struct line{
+	unsigned char blank[16];
+};
+
 	/* Functions */
 void createRoot();
 char *findFatfree();
@@ -405,6 +409,7 @@ void fs_delete(char *fileName){
 	int fileIndex = 0;
 	char dataPtr[6];
 	char metaPtr[6];
+	char entryName[13] = {'\0'};
 
 	fileIndex = findFileByName(fileName); //returns the FAT index of this file
 	if (fileIndex == -1){	// file does not exist
@@ -432,7 +437,18 @@ void fs_delete(char *fileName){
 	/* Delete FAT data */
 	fseek(fp, (fileIndex - 1) * 16, SEEK_SET);	// seek to the FAT index
 	struct fat clearfat = {""};
-	fwrite(&clearfat, sizeof(struct fat), 1, fp);	
+	fwrite(&clearfat, sizeof(struct fat), 1, fp);
+
+	/* Delete from dir */
+	for(int i = 0; i < 32; i++){
+		fseek(fp, CURRENT_DIR + (i * 16), SEEK_SET);
+		fread(entryName, 1, 12, fp);
+		if (strcmp(entryName, fileName) == 0){
+			fseek(fp, CURRENT_DIR + (i * 16), SEEK_SET);
+			struct line clearline = {""};
+			fwrite(&clearline, sizeof(struct line), 1, fp);
+		}
+	}
 }
 /* ------------------------------ Read ------------------------------ */
 void fs_read(char *fileName){
