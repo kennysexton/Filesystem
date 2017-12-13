@@ -29,6 +29,9 @@ char digit6[6]; // Used for internal ptrs
 char *blank32[32] = { NULL };
 char *blank64[64] = { NULL };
 
+long CURRENT_DIR = 0;
+long PREV_DIR = 0;
+
 	/* Structs */
 struct fat{		// fat entries are 32 byte (16 fat entries per block)
 	unsigned char valid[1];		// 1 byte
@@ -111,7 +114,7 @@ void createRoot() {
 
 	/* --------------------- Init data --------------------- */ 
 	fseek(fp, BLOCK_SIZE * START_OF_DATA, SEEK_SET);
-	fputs("ROOT DATA BLOCK", fp);
+	CURRENT_DIR = START_OF_DATA * BLOCK_SIZE;
 
 	/* --------------------- Init meta --------------------- */  
 	i = fseek(fp, BLOCK_SIZE * START_OF_META, SEEK_SET); // START OF META
@@ -325,14 +328,12 @@ void fs_create(char *fileName){
 
 		/* Find free meta */
 	metaIndex = strdup(findMetafree());	// returns line number of free meta sequence
-	printf("metaIndex: %s\n", metaIndex);
 	if (strcmp(metaIndex, "-1")  == 0){	// findMetafree() retruns -1 on error
 		printf("SYSTEM| Unable to locate free meta \n");
 	}
 
 		/* Find free meta */
 	dataIndex = strdup(findDatafree());
-	printf("dataIndex: %s \n", dataIndex);
 	if (strcmp(dataIndex, "-1")  == 0){	// findMetafree() retruns -1 on error
 		printf("SYSTEM| Unable to locate a free data block \n");
 	}
@@ -379,7 +380,24 @@ void fs_create(char *fileName){
 
 		/* Reserve Data */
 	fseek(fp, (atol(dataIndex) - 1) * 16, SEEK_SET); 	// place a 1 at the start of data bit
-	fputs("1", fp);										// this is done so that findDataFree() will see that this block is reserved
+	fputs(".", fp);										// this is done so that findDataFree() will see that this block is reserved
+
+		/* Put File in DIR listing */
+	fseek(fp, CURRENT_DIR, SEEK_SET);
+	int i = 0;
+	int found = 0;
+	char valid[1];
+
+	while(i < 32){
+		fseek(fp, CURRENT_DIR + (i * 16), SEEK_SET);
+		fread(valid, 1, 1, fp); // read in first byte 
+		if(strcmp(valid, "") == 0){ 	// if first byte is null,  then block is empty
+			fseek(fp, -1, SEEK_CUR);	// move back one
+			fwrite(fileName, 12, 1, fp);
+			break;	
+		}
+		i++;
+	}
 }
 
 /* ------------------------------ Delete ------------------------------ */
@@ -414,13 +432,7 @@ void fs_delete(char *fileName){
 	/* Delete FAT data */
 	fseek(fp, (fileIndex - 1) * 16, SEEK_SET);	// seek to the FAT index
 	struct fat clearfat = {""};
-	fwrite(&clearfat, sizeof(struct fat), 1, fp);
-
-
-
-
-
-	
+	fwrite(&clearfat, sizeof(struct fat), 1, fp);	
 }
 /* ------------------------------ Read ------------------------------ */
 void fs_read(char *fileName){
@@ -519,6 +531,19 @@ void fs_info(char *fileName){
 	printf("Created: %s-%s-%s at %s:%s:%s \n", cmon, cday, cyear, chour, cmin, csec);
 	printf("Modified: %s-%s-%s at %s:%s:%s \n", cmon, cday, cyear, chour, cmin, csec);
 }
+/* ------------------------------ List ------------------------------ */
+void fs_list(){
+	char fileName[13] = {'\0'};
+
+	for(int i = 0; i < 32; i++){
+		fseek(fp, CURRENT_DIR + (i * 16), SEEK_SET);
+		// fileName = {'\0'};  // clear out fileName 
+		fread(fileName, 1, 12, fp);
+		printf("%s   ", fileName);
+		}
+	printf("\n");
+}
+
 /* ------------------------------ Exit ------------------------------ */
 void fs_exit(){ // closes the disk,  and exits
 	fclose(fp);

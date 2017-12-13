@@ -50,7 +50,7 @@ void displayOptions(){
 	printf("\"create\"\t\"delete\" \n");
 	printf("\"read\"  \t\"write\" \n");
 	printf("\"up\"    \t\"down\" \n");
-	printf("\"info\"  \t\"path\" \n");
+	printf("\"info\"  \t\"clear\" \n");
 	printf("\"list\"  \t\"exit\" \n");
 }
 
@@ -113,6 +113,9 @@ void commandChoice(char str[]){
 	}
 	else if (strcmp(str, "clear") == 0){ // clears screen
 		system("clear");	
+	}
+	else if (strcmp(str, "list") == 0){ // exit program
+		fs_list();	
 	}
 	else if (strcmp(str, "exit") == 0){ // exit program
 		fs_exit();	

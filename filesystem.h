@@ -8,6 +8,7 @@ void fs_delete(char *fileName);
 void fs_read(char *fileName);
 void fs_write(char *fileName, char *writeData);
 void fs_info(char *fileName);
+void fs_list();
 void fs_exit();
 
 #endif // FILESYSTEM_H_
