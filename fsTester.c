@@ -36,7 +36,7 @@ int main(){
 		printf("$ ");
 		scanf("%20s", str);
 
-		commandChoice(str);
+		commandChoice(str); // calls the appropriate filesystem method
 	}
 }
 
@@ -58,14 +58,14 @@ void commandChoice(char str[]){
 
 	char fileName[12];
 
-	if (strcmp(str, "create") == 0){ // needs extension handling
+	if (strcmp(str, "create") == 0){ 
 		printf("create selected\n");
 		printf("Enter the name of file: ");
 		scanf("%12s", fileName);
 
 		fs_create(fileName, 0);		// 0 flag means file
 	}
-	else if (strcmp(str, "delete") == 0){
+	else if (strcmp(str, "delete") == 0){				// delete files
 		printf("Enter the name of file: ");
 		scanf("%12s", fileName);
 		fs_delete(fileName);
@@ -88,33 +88,33 @@ void commandChoice(char str[]){
 		fs_write(fileName, dataBlock);
 		free(dataBlock);
 	}
-	else if (strcmp(str, "mkdir") == 0){  // create a directory
+	else if (strcmp(str, "mkdir") == 0){  				// create a directory
 		printf("Enter the name of directory: ");
 		scanf("%12s", fileName);
 
-		fs_create(fileName, 1); 	// 1 flag means directory
+		fs_create(fileName, 1); 						// 1 flag means directory
 	}
 	else if (strcmp(str, "cd") == 0){
 		printf("Enter the name of directory: ");
 		scanf("%12s", fileName);
 		fs_cd(fileName);
 	}
-	else if (strcmp(str, "info") == 0){  // get file metadata
+	else if (strcmp(str, "info") == 0){  				// get file metadata
 		printf("Enter the name of file: ");
 		scanf("%12s", fileName);
 
 		fs_info(fileName);
 	}
-	else if (strcmp(str, "clear") == 0){ // clears screen
+	else if (strcmp(str, "clear") == 0){ 				// clears screen
 		system("clear");	
 	}
-	else if (strcmp(str, "list") == 0){ // exit program
+	else if (strcmp(str, "list") == 0){					// exit program
 		fs_list();	
 	}
-	else if (strcmp(str, "exit") == 0){ // exit program
+	else if (strcmp(str, "exit") == 0){					// exit program
 		fs_exit();	
 	}
-	else if (strcmp(str, "quit") == 0){ // exit program
+	else if (strcmp(str, "quit") == 0){ 				// exit program
 		fs_exit();	
 	}
 	else {

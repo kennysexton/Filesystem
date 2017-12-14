@@ -8,14 +8,13 @@
 #include <string.h>
 #include <time.h> 	// get current time
 
-#define DRIVE "Drive2MB"
+#define DRIVE "Drive2MB"	// Chosen file to be used as 
 #define TOTAL_BLOCKS 244 	// number of avalible blocks at 2MB
-#define BLOCK_SIZE 512  	//bytes
-#define BLOCK_SIZE_LINES
-#define FILE_MAX 64   	// files can take up a max of 64 blocks  == 32768 MAX BYTES / 512 BLOCK_SIZE
-#define START_OF_FAT 0  // same as SEEK_SET
-#define START_OF_META 1 // # of blocks until start of meta
-#define START_OF_DATA 3	// # of block until start of data 
+#define BLOCK_SIZE 512  	// bytes
+#define FILE_MAX 64   		// files can take up a max of 64 blocks  == 32768 MAX BYTES / 512 BLOCK_SIZE
+#define START_OF_FAT 0  	// same as SEEK_SET
+#define START_OF_META 1 	// # of blocks until start of meta
+#define START_OF_DATA 3		// # of block until start of data 
 
 	/* Colors */
 #define BRIGHT_RED "\033[1m\033[31m"
@@ -30,7 +29,6 @@ char *blank32[32] = { NULL };
 char *blank64[64] = { NULL };
 
 long CURRENT_DIR = 0;
-
 
 	/* Structs */
 struct fat{		// fat entries are 32 byte (16 fat entries per block)
@@ -63,7 +61,7 @@ struct data{		// used to delete data blocks (via fs_delete)
 	unsigned char blank[512];
 };
 
-struct line{
+struct line{		// used to delete a single line from a dir data block
 	unsigned char blank[16];
 };
 
@@ -74,8 +72,6 @@ char *findMetafree();
 int findFileByName(char *fileName);
 char *getcurrentTime(int i);
 char *getcurrentDate(int i);
-void clear32bytes();
-void clear64bytes();
 void printTime();
 void printfat( struct fat fatentry);
 
@@ -92,7 +88,6 @@ FILE setup(){ // Sets up the file system
 void createRoot() {
 	int i = 0;
 		/* --------------------- Init FAT --------------------- */
-	//clear32bytes();
 	fseek(fp, 0, SEEK_SET);		// START OF FAT
 
 	if (i == 0){  // prints debug information
@@ -109,8 +104,7 @@ void createRoot() {
 	sprintf(digit6, "%u", BLOCK_SIZE * START_OF_DATA / 16 + 1);	// returns the index of data as a string
 	strcpy(FATroot.dataPtr, digit6);
 
-	//sprintf(digit6, "%u", 3);	// returns the index of data as a string
-	strcpy(FATroot.nextPtr, "-1");
+	strcpy(FATroot.nextPtr, "-1");								// Root uses only 1 datablock
 
 	//printfat(FATroot);
 	fwrite(&FATroot, sizeof(struct fat), 1, fp);
@@ -123,7 +117,6 @@ void createRoot() {
 
 	/* --------------------- Init meta --------------------- */  
 	i = fseek(fp, BLOCK_SIZE * START_OF_META, SEEK_SET); // START OF META
-	//fputs("11111111", fp);
 
 	if (i == 0){  // prints debug information
 		printf("SYSTEM| blank root created\n");
@@ -301,16 +294,6 @@ void printTime(){ // prints current time formatted   || FOR DEBUGGING
 			tm->tm_year+1900, tm->tm_mon+1, tm->tm_mday,
 			tm->tm_hour, tm->tm_min, tm->tm_sec);
 	}
-}
-
-void clear32bytes(){  //  resets a row of 32 bytes BORKEN ATM
-	fwrite(blank32, 1, sizeof(blank32), fp);
-	//TODO: may add a fp reset
-}
-
-void clear64bytes(){  //  resets a row of 64 bytes 
-	fwrite(blank64, 1, sizeof(blank64), fp);
-	//TODO: may add a fp reset
 }
 
 /*------------------------------------------------------------------- Called by user -------------------------------------------------------------------*/
