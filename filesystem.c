@@ -522,7 +522,42 @@ void fs_up(){	// same as cd ..
 	CURRENT_DIR = PREV_DIR;
 }
 void fs_cd(char *fileName){
+	int fileIndex = 0;
+	char ext[3];
+	char metaPtr[6];
+	char dataPtr[6];
+
+	fileIndex = findFileByName(fileName); //returns the FAT index of this file
+	if (fileIndex == -1){	// file does not exist
+		printf(BRIGHT_RED "DIR NOT FOUND: %s\n" COLOR_RESET, fileName);
+		return;
+	}
+
+	fseek(fp, (fileIndex - 1) * 16, SEEK_SET);	// seek to the FAT index
+	fseek(fp, 13, SEEK_CUR); 					// seek to the offset of metaPtr
+	fread(metaPtr, 1, 6, fp);
+
+	fseek(fp,(atol(metaPtr) - 1) * 16, SEEK_SET);// Seek to files metaPtr block
+
+	fseek(fp, 12, SEEK_CUR);					// SKip past fileName[12] of meta
+
+	fread(ext, 1, 3, fp);
+	printf("ext: %s\n", ext);
+	if(strcmp(ext, "DIR") != 0){
+		printf(BRIGHT_RED "%s is not a Directory\n" COLOR_RESET, fileName);
+		return;
+	}
+
+	fseek(fp, (fileIndex - 1) * 16, SEEK_SET);	// seek to the FAT index
+	fseek(fp, 19, SEEK_CUR); 					// seek to the offset of dataPtr
+
+	fread(dataPtr, 1, 6, fp);
+
+	printf("dataPtr: %s\n", dataPtr);
+	CURRENT_DIR = (atol(dataPtr) -1)* 16;
 	
+
+	// check if is of type DIR
 }
 /* ------------------------------ Info ------------------------------ */
 void fs_info(char *fileName){
