@@ -390,8 +390,6 @@ void fs_create(char *fileName, int flag){
 	fputs(".", fp);										// this is done so that findDataFree() will see that this block is reserved
 
 		/* Put File in DIR listing */
-	printf("CURRENT_DIR: %li\n", CURRENT_DIR);
-	fseek(fp, CURRENT_DIR, SEEK_SET);
 	int i = 0;
 	int found = 0;
 	char valid[1];
@@ -495,7 +493,7 @@ void fs_write(char *fileName, char *writeData){
 	fileIndex = findFileByName(fileName); //returns the FAT index of this file
 	//printf("fileIndex: %d\n", fileIndex);
 	if (fileIndex == -1){	// file does not exist
-		printf("FILE NOT FOUND: %s\n", fileName);
+		printf(BRIGHT_RED "FILE NOT FOUND: %s\n" COLOR_RESET, fileName);
 		return;
 	}
 	inputLength = strlen(writeData);
@@ -537,7 +535,6 @@ void fs_cd(char *fileName){
 	fseek(fp, 12, SEEK_CUR);					// SKip past fileName[12] of meta
 
 	fread(ext, 1, 3, fp);
-	printf("ext: %s\n", ext);
 	if(strcmp(ext, "DIR") != 0){
 		printf(BRIGHT_RED "%s is not a Directory\n" COLOR_RESET, fileName);
 		return;
@@ -548,8 +545,6 @@ void fs_cd(char *fileName){
 	fseek(fp, 19, SEEK_CUR); 					// seek to the offset of dataPtr
 
 	fread(dataPtr, 1, 6, fp);
-
-	printf("dataPtr: %s\n", dataPtr);
 	CURRENT_DIR = (atol(dataPtr) -1)* 16;
 
 }

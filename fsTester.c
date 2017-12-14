@@ -29,9 +29,9 @@ int main(){
 	char str[20];
 	
 	setup(); // start up the filesystem
-	welcome();
+	welcome();	// print welcome message
 	
-	while (1){
+	while (1){		// display options until user exits
 		displayOptions();
 		printf("$ ");
 		scanf("%20s", str);
@@ -56,7 +56,7 @@ void displayOptions(){
 
 void commandChoice(char str[]){
 
-	char fileName[9];
+	char fileName[12];
 
 	if (strcmp(str, "create") == 0){ // needs extension handling
 		printf("create selected\n");
