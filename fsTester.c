@@ -49,7 +49,8 @@ void displayOptions(){
 	printf(YELLOW_BOLD "Here are your options:\n" COLOR_RESET);
 	printf("\"create\"\t\"delete\" \n");
 	printf("\"read\"  \t\"write\" \n");
-	// printf("\"up\"    \t\"down\" \n");
+	printf("\"mkdir\" \t\"up\" \n");
+	printf("\"cd\" 	  \t\"\" \n");
 	printf("\"info\"  \t\"clear\" \n");
 	printf("\"list\"  \t\"exit\" \n");
 }
@@ -63,11 +64,7 @@ void commandChoice(char str[]){
 		printf("Enter the name of file: ");
 		scanf("%12s", fileName);
 
-		// invalid names == ""
-		fs_create(fileName);
-
-		//divide fileName and .txt if applicable
-		//fs_create(char *fileName, char *extension)
+		fs_create(fileName, 0);		// 0 flag means file
 	}
 	else if (strcmp(str, "delete") == 0){
 		printf("Enter the name of file: ");
@@ -82,10 +79,7 @@ void commandChoice(char str[]){
 	else if (strcmp(str, "write") == 0){
 		
 		char *dataBlock = calloc(32768, sizeof(char));	// create an empty larger array
-		char c;
-		int i;
 
-		printf("create selected\n");
 		printf("Enter the name of file: ");
 		scanf("%12s", fileName);
 		printf("--- Write --- \n");
@@ -93,11 +87,22 @@ void commandChoice(char str[]){
 		if(read(STDIN_FILENO, dataBlock, 32768) < 0){
 		}
 		fs_write(fileName, dataBlock);
-
 		free(dataBlock);
 	}
-	// up
+	else if (strcmp(str, "mkdir") == 0){  // create a directory
+		printf("Enter the name of directory: ");
+		scanf("%12s", fileName);
 
+		fs_create(fileName, 1); 	// 1 flag means directory
+	}
+	else if (strcmp(str, "up") == 0){ 
+		fs_up();
+	}
+	else if (strcmp(str, "cd") == 0){
+		printf("Enter the name of directory: ");
+		scanf("%12s", fileName);
+		fs_cd(fileName);
+	}
 	else if (strcmp(str, "info") == 0){  // get file metadata
 		printf("Enter the name of file: ");
 		scanf("%12s", fileName);

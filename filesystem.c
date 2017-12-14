@@ -31,6 +31,7 @@ char *blank64[64] = { NULL };
 
 long CURRENT_DIR = 0;
 long PREV_DIR = 0;
+long PREV_PREV_DIR = 0;
 
 	/* Structs */
 struct fat{		// fat entries are 32 byte (16 fat entries per block)
@@ -119,6 +120,7 @@ void createRoot() {
 	/* --------------------- Init data --------------------- */ 
 	fseek(fp, BLOCK_SIZE * START_OF_DATA, SEEK_SET);
 	CURRENT_DIR = START_OF_DATA * BLOCK_SIZE;
+	fputs(".", fp);										// this is done so that findDataFree() will see that this block is reserved
 
 	/* --------------------- Init meta --------------------- */  
 	i = fseek(fp, BLOCK_SIZE * START_OF_META, SEEK_SET); // START OF META
@@ -314,18 +316,14 @@ void clear64bytes(){  //  resets a row of 64 bytes
 
 /*------------------------------------------------------------------- Called by user -------------------------------------------------------------------*/
 /* ------------------------------ Create ------------------------------ */
-void fs_create(char *fileName){
-	printf("filename: %s\n", fileName);
+void fs_create(char *fileName, int flag){
 	char *retrunIndex;
 	char *fatIndex;
 	char *metaIndex;
 	char *dataIndex; 
-	//fputs(fileName, fp);
 
 		/* Find free fat entry */
 	fatIndex = strdup(findFatfree());	// returns line number of free fat sequence
-
-	printf("fatIndex: %s\n", fatIndex);
 	if (strcmp(fatIndex, "-1")  == 0){  // findFatfree() retruns -1 on error
 		printf("SYSTEM| Unable to locate free FAT \n");
 	}
@@ -360,7 +358,13 @@ void fs_create(char *fileName){
 	struct meta newMeta = {""};										// create an empty meta struct
 
 	strcpy(newMeta.fileName, fileName);
-	strcpy(newMeta.ext, "");
+
+	if (flag == 1){
+		strcpy(newMeta.ext, "DIR"); // gives dir ext
+	}
+	else {
+		strcpy(newMeta.ext, "");
+	}
 
 	strcpy(newMeta.create_year, getcurrentDate(1));
 	strcpy(newMeta.create_month, getcurrentDate(2));
@@ -387,6 +391,7 @@ void fs_create(char *fileName){
 	fputs(".", fp);										// this is done so that findDataFree() will see that this block is reserved
 
 		/* Put File in DIR listing */
+	printf("CURRENT_DIR: %li\n", CURRENT_DIR);
 	fseek(fp, CURRENT_DIR, SEEK_SET);
 	int i = 0;
 	int found = 0;
@@ -401,6 +406,13 @@ void fs_create(char *fileName){
 			break;	
 		}
 		i++;
+	}
+
+		/* If dir set as new current dir */
+	if (flag == 1){
+		PREV_PREV_DIR = PREV_DIR;	// update grandparent
+		PREV_DIR = CURRENT_DIR;  // update parent
+		CURRENT_DIR = (atol(dataIndex) - 1) * 16 ;
 	}
 }
 
@@ -505,6 +517,13 @@ void fs_write(char *fileName, char *writeData){
 	fseek(fp, (dataPtrAsNum - 1) * 16, SEEK_SET);
 	fwrite(writeData, 1, BLOCK_SIZE, fp);
 }
+/* ------------------------------ up ------------------------------ */
+void fs_up(){	// same as cd ..
+	CURRENT_DIR = PREV_DIR;
+}
+void fs_cd(char *fileName){
+	
+}
 /* ------------------------------ Info ------------------------------ */
 void fs_info(char *fileName){
 	char fName[13] = {'\0'};
@@ -522,7 +541,7 @@ void fs_info(char *fileName){
 
 	fileIndex = findFileByName(fileName); //returns the FAT index of this file
 	if (fileIndex == -1){	// file does not exist
-		printf("FILE NOT FOUND: %s\n", fileName);
+		printf(BRIGHT_RED "FILE NOT FOUND: %s\n" COLOR_RESET, fileName);
 		return;
 	}
 	fseek(fp, (fileIndex - 1) * 16, SEEK_SET);	// seek to the FAT index
