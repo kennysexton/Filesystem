@@ -49,8 +49,7 @@ void displayOptions(){
 	printf(YELLOW_BOLD "Here are your options:\n" COLOR_RESET);
 	printf("\"create\"\t\"delete\" \n");
 	printf("\"read\"  \t\"write\" \n");
-	printf("\"mkdir\" \t\"up\" \n");
-	printf("\"cd\" 	  \t\"\" \n");
+	printf("\"mkdir\" \t\"cd\" \n");
 	printf("\"info\"  \t\"clear\" \n");
 	printf("\"list\"  \t\"exit\" \n");
 }
@@ -94,9 +93,6 @@ void commandChoice(char str[]){
 		scanf("%12s", fileName);
 
 		fs_create(fileName, 1); 	// 1 flag means directory
-	}
-	else if (strcmp(str, "up") == 0){ 
-		fs_up();
 	}
 	else if (strcmp(str, "cd") == 0){
 		printf("Enter the name of directory: ");

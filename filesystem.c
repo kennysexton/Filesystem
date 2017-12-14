@@ -30,8 +30,7 @@ char *blank32[32] = { NULL };
 char *blank64[64] = { NULL };
 
 long CURRENT_DIR = 0;
-long PREV_DIR = 0;
-long PREV_PREV_DIR = 0;
+
 
 	/* Structs */
 struct fat{		// fat entries are 32 byte (16 fat entries per block)
@@ -410,8 +409,6 @@ void fs_create(char *fileName, int flag){
 
 		/* If dir set as new current dir */
 	if (flag == 1){
-		PREV_PREV_DIR = PREV_DIR;	// update grandparent
-		PREV_DIR = CURRENT_DIR;  // update parent
 		CURRENT_DIR = (atol(dataIndex) - 1) * 16 ;
 	}
 }
@@ -517,10 +514,7 @@ void fs_write(char *fileName, char *writeData){
 	fseek(fp, (dataPtrAsNum - 1) * 16, SEEK_SET);
 	fwrite(writeData, 1, BLOCK_SIZE, fp);
 }
-/* ------------------------------ up ------------------------------ */
-void fs_up(){	// same as cd ..
-	CURRENT_DIR = PREV_DIR;
-}
+/* ------------------------------ cd ------------------------------ */
 void fs_cd(char *fileName){
 	int fileIndex = 0;
 	char ext[3];
@@ -533,6 +527,7 @@ void fs_cd(char *fileName){
 		return;
 	}
 
+		/* Check if type dir */
 	fseek(fp, (fileIndex - 1) * 16, SEEK_SET);	// seek to the FAT index
 	fseek(fp, 13, SEEK_CUR); 					// seek to the offset of metaPtr
 	fread(metaPtr, 1, 6, fp);
@@ -548,6 +543,7 @@ void fs_cd(char *fileName){
 		return;
 	}
 
+		/* Set as new current directory */
 	fseek(fp, (fileIndex - 1) * 16, SEEK_SET);	// seek to the FAT index
 	fseek(fp, 19, SEEK_CUR); 					// seek to the offset of dataPtr
 
@@ -555,9 +551,7 @@ void fs_cd(char *fileName){
 
 	printf("dataPtr: %s\n", dataPtr);
 	CURRENT_DIR = (atol(dataPtr) -1)* 16;
-	
 
-	// check if is of type DIR
 }
 /* ------------------------------ Info ------------------------------ */
 void fs_info(char *fileName){
