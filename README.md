@@ -1,5 +1,4 @@
 # Filesystem
-A CIS 3207 Project
 
 ## Design
 
